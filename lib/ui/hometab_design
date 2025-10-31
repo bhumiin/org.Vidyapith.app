@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+
+<html class="light dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Institution Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script>tailwind.config = {darkMode: "class", theme: {extend: {colors: {primary: "#0b73da", "background-light": "#f5f7f8", "background-dark": "#101922", "light-blue-accent": "#E3F2FD", "dark-grey-text": "#424242", "light-grey-text": "#BDBDBD"}, fontFamily: {display: "Public Sans"}, borderRadius: {DEFAULT: "0.5rem", lg: "1rem", xl: "1.5rem", full: "9999px"}}}};</script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            font-size: 24px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="sticky top-0 z-10 flex items-center bg-background-light dark:bg-background-dark p-4 shadow-sm">
+<div class="flex size-12 shrink-0 items-center justify-start text-primary">
+<span class="material-symbols-outlined text-3xl">school</span>
+</div>
+<h2 class="text-dark-grey-text dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1">Institution Name</h2>
+<div class="flex w-12 items-center justify-end">
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-transparent text-dark-grey-text dark:text-white gap-2 text-base font-bold leading-normal tracking-[0.015em] min-w-0 p-0 hover:bg-gray-100 dark:hover:bg-gray-800">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+</div>
+<div class="p-4 pt-6">
+<h1 class="text-dark-grey-text dark:text-white tracking-light text-[32px] font-bold leading-tight text-left">Welcome, Bhumin/h1>
+<p class="text-light-grey-text dark:text-gray-400 text-base font-normal leading-normal pt-1">"The fear of the Lord is the beginning of wisdom." - Proverbs 9:10</p>
+</div>
+<div class="p-4">
+<div class="flex flex-col items-stretch justify-start rounded-xl bg-light-blue-accent dark:bg-background-dark dark:border dark:border-gray-700 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+<div class="flex w-full grow flex-col items-stretch justify-center gap-2 p-4">
+<p class="text-primary dark:text-blue-400 text-sm font-bold uppercase tracking-wider">LATEST ANNOUNCEMENT</p>
+<p class="text-dark-grey-text dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">Mid-Term Exam Schedule Released</p>
+<p class="text-dark-grey-text/80 dark:text-gray-300 text-base font-normal leading-normal">The schedule for the upcoming mid-term examinations is now available on the student portal.</p>
+<div class="flex items-center gap-4 justify-between pt-3">
+<button class="flex cursor-pointer items-center justify-center text-light-grey-text dark:text-gray-400 text-sm font-medium leading-normal hover:text-dark-grey-text dark:hover:text-white">
+<span class="truncate">Dismiss</span>
+</button>
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-5 bg-primary text-white text-sm font-medium leading-normal shadow-md hover:bg-primary/90 transition-colors">
+<span class="truncate">Learn More</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="px-4 pt-5 pb-3">
+<h2 class="text-dark-grey-text dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">Upcoming Events</h2>
+</div>
+<div class="flex flex-col gap-3 px-4">
+<div class="flex items-center gap-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-background-light dark:bg-gray-800 p-4 shadow-sm">
+<div class="flex flex-col items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/20 p-3 text-primary dark:text-blue-300">
+<span class="text-xs font-bold uppercase">SEP</span>
+<span class="text-2xl font-bold">28</span>
+</div>
+<div class="flex-1">
+<h3 class="font-bold text-dark-grey-text dark:text-white">Theology Symposium</h3>
+<p class="text-sm text-light-grey-text dark:text-gray-400">Auditorium A, 10:00 AM</p>
+</div>
+<span class="material-symbols-outlined text-light-grey-text dark:text-gray-500">chevron_right</span>
+</div>
+<div class="flex items-center gap-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-background-light dark:bg-gray-800 p-4 shadow-sm">
+<div class="flex flex-col items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/20 p-3 text-primary dark:text-blue-300">
+<span class="text-xs font-bold uppercase">OCT</span>
+<span class="text-2xl font-bold">05</span>
+</div>
+<div class="flex-1">
+<h3 class="font-bold text-dark-grey-text dark:text-white">Chapel Service: Guest Speaker</h3>
+<p class="text-sm text-light-grey-text dark:text-gray-400">Main Chapel, 7:00 PM</p>
+</div>
+<span class="material-symbols-outlined text-light-grey-text dark:text-gray-500">chevron_right</span>
+</div>
+</div>
+<div class="p-4 pt-5">
+<button class="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-primary text-white text-base font-medium leading-normal shadow-lg shadow-primary/30 hover:bg-primary/90 transition-colors">
+<span class="truncate">View All Events</span>
+</button>
+</div>
+<div class="px-4 pt-5 pb-4">
+<h2 class="text-dark-grey-text dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">Academic Resources</h2>
+</div>
+<div class="grid grid-cols-2 gap-4 px-4 pb-8">
+<a class="flex h-24 flex-col items-start justify-end gap-2 rounded-xl bg-light-blue-accent dark:bg-primary/20 p-4 text-left shadow-sm transition-transform duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined !text-3xl text-primary dark:text-blue-300">menu_book</span>
+<p class="text-base font-bold text-dark-grey-text dark:text-gray-200">Library</p>
+</a>
+<a class="flex h-24 flex-col items-start justify-end gap-2 rounded-xl bg-light-blue-accent dark:bg-primary/20 p-4 text-left shadow-sm transition-transform duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined !text-3xl text-primary dark:text-blue-300">person</span>
+<p class="text-base font-bold text-dark-grey-text dark:text-gray-200">Student Portal</p>
+</a>
+<a class="flex h-24 flex-col items-start justify-end gap-2 rounded-xl bg-light-blue-accent dark:bg-primary/20 p-4 text-left shadow-sm transition-transform duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined !text-3xl text-primary dark:text-blue-300">school</span>
+<p class="text-base font-bold text-dark-grey-text dark:text-gray-200">Course Catalog</p>
+</a>
+<a class="flex h-24 flex-col items-start justify-end gap-2 rounded-xl bg-light-blue-accent dark:bg-primary/20 p-4 text-left shadow-sm transition-transform duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined !text-3xl text-primary dark:text-blue-300">map</span>
+<p class="text-base font-bold text-dark-grey-text dark:text-gray-200">Campus Map</p>
+</a>
+<a class="flex h-24 flex-col items-start justify-end gap-2 rounded-xl bg-light-blue-accent dark:bg-primary/20 p-4 text-left shadow-sm transition-transform duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined !text-3xl text-primary dark:text-blue-300">schedule</span>
+<p class="text-base font-bold text-dark-grey-text dark:text-gray-200">Prayer Times</p>
+</a>
+<a class="flex h-24 flex-col items-start justify-end gap-2 rounded-xl bg-light-blue-accent dark:bg-primary/20 p-4 text-left shadow-sm transition-transform duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined !text-3xl text-primary dark:text-blue-300">contacts</span>
+<p class="text-base font-bold text-dark-grey-text dark:text-gray-200">Directory</p>
+</a>
+</div>
+</div>
+</body></html>
