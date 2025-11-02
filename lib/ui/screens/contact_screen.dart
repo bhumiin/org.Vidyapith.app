@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/website_content.dart';
@@ -10,7 +11,9 @@ import 'admissions_screen.dart';
 import '../components/logo_leading.dart';
 
 class ContactScreen extends StatefulWidget {
-  const ContactScreen({super.key});
+  final ValueNotifier<bool>? scrollNotifier;
+
+  const ContactScreen({super.key, this.scrollNotifier});
 
   @override
   State<ContactScreen> createState() => _ContactScreenState();
@@ -18,6 +21,7 @@ class ContactScreen extends StatefulWidget {
 
 class _ContactScreenState extends State<ContactScreen> {
   late final WebsiteScraper _scraper;
+  final ScrollController _scrollController = ScrollController();
   ContactContent? _content;
   bool _isLoading = true;
   String? _errorMessage;
@@ -27,12 +31,29 @@ class _ContactScreenState extends State<ContactScreen> {
     super.initState();
     _scraper = WebsiteScraper();
     _loadContent();
+    widget.scrollNotifier?.addListener(_onScrollRequested);
   }
 
   @override
   void dispose() {
+    widget.scrollNotifier?.removeListener(_onScrollRequested);
+    _scrollController.dispose();
     _scraper.dispose();
     super.dispose();
+  }
+
+  void _onScrollRequested() {
+    scrollToTop();
+  }
+
+  void scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   Future<void> _loadContent({bool forceRefresh = false}) async {
@@ -84,6 +105,7 @@ class _ContactScreenState extends State<ContactScreen> {
           onRefresh: () => _loadContent(forceRefresh: true),
           color: const Color(0xFF0B73DA),
           child: SingleChildScrollView(
+            controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 import '../theme/shadcn_theme.dart';
 import '../components/card.dart';
@@ -7,7 +8,9 @@ import '../../services/website_scraper.dart';
 import '../components/logo_leading.dart';
 
 class EventsScreen extends StatefulWidget {
-  const EventsScreen({super.key});
+  final ValueNotifier<bool>? scrollNotifier;
+
+  const EventsScreen({super.key, this.scrollNotifier});
 
   @override
   State<EventsScreen> createState() => _EventsScreenState();
@@ -15,6 +18,7 @@ class EventsScreen extends StatefulWidget {
 
 class _EventsScreenState extends State<EventsScreen> {
   final WebsiteScraper _scraper = WebsiteScraper();
+  final ScrollController _scrollController = ScrollController();
 
   EventsContent? _eventsContent;
   bool _isLoading = true;
@@ -24,12 +28,29 @@ class _EventsScreenState extends State<EventsScreen> {
   void initState() {
     super.initState();
     _loadContent();
+    widget.scrollNotifier?.addListener(_onScrollRequested);
   }
 
   @override
   void dispose() {
+    widget.scrollNotifier?.removeListener(_onScrollRequested);
+    _scrollController.dispose();
     _scraper.dispose();
     super.dispose();
+  }
+
+  void _onScrollRequested() {
+    scrollToTop();
+  }
+
+  void scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   Future<void> _loadContent({bool forceRefresh = false}) async {
@@ -77,6 +98,7 @@ class _EventsScreenState extends State<EventsScreen> {
           onRefresh: () => _loadContent(forceRefresh: true),
           color: const Color(0xFF0B73DA),
           child: SingleChildScrollView(
+            controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

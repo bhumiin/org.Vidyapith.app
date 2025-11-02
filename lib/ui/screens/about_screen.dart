@@ -8,13 +8,17 @@ import '../theme/shadcn_theme.dart';
 import '../components/logo_leading.dart';
 
 class AboutScreen extends StatefulWidget {
-  const AboutScreen({super.key});
+  final ValueNotifier<bool>? scrollNotifier;
+
+  const AboutScreen({super.key, this.scrollNotifier});
 
   @override
   State<AboutScreen> createState() => _AboutScreenState();
 }
 
 class _AboutScreenState extends State<AboutScreen> {
+  final ScrollController _scrollController = ScrollController();
+
   static const _carouselImages = [
     'https://www.vidyapith.org/uploads/5/2/1/3/52135817/_685374493.jpg',
     'https://www.vidyapith.org/uploads/5/2/1/3/52135817/_7709050.jpg',
@@ -37,6 +41,33 @@ class _AboutScreenState extends State<AboutScreen> {
       'https://drive.google.com/file/d/0B6DIjih-Bpcrc2stbi1DN1YzUmc/preview';
 
   bool _isRefreshing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.scrollNotifier?.addListener(_onScrollRequested);
+  }
+
+  @override
+  void dispose() {
+    widget.scrollNotifier?.removeListener(_onScrollRequested);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScrollRequested() {
+    scrollToTop();
+  }
+
+  void scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
 
   Future<void> _onRefresh() async {
     if (_isRefreshing) return;
@@ -62,6 +93,7 @@ class _AboutScreenState extends State<AboutScreen> {
           onRefresh: _onRefresh,
           color: const Color(0xFF0B73DA),
           child: SingleChildScrollView(
+            controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

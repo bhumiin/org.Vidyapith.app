@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 import '../theme/shadcn_theme.dart';
 import '../components/calendar_widget.dart';
@@ -8,7 +9,9 @@ import '../../services/calendar_scraper.dart';
 import '../components/logo_leading.dart';
 
 class CalendarScreen extends StatefulWidget {
-  const CalendarScreen({super.key});
+  final ValueNotifier<bool>? scrollNotifier;
+
+  const CalendarScreen({super.key, this.scrollNotifier});
 
   @override
   State<CalendarScreen> createState() => _CalendarScreenState();
@@ -28,13 +31,29 @@ class _CalendarScreenState extends State<CalendarScreen> {
   void initState() {
     super.initState();
     _loadContent();
+    widget.scrollNotifier?.addListener(_onScrollRequested);
   }
 
   @override
   void dispose() {
+    widget.scrollNotifier?.removeListener(_onScrollRequested);
     _scrollController.dispose();
     _scraper.dispose();
     super.dispose();
+  }
+
+  void _onScrollRequested() {
+    scrollToTop();
+  }
+
+  void scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   Future<void> _loadContent({bool forceRefresh = false}) async {

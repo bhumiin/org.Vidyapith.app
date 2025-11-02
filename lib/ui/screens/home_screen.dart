@@ -11,9 +11,13 @@ import 'classes_screen.dart';
 import 'class_detail_screen.dart';
 import 'donate_screen.dart';
 import 'admissions_screen.dart';
+import 'snack_signup_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final ValueNotifier<int>? refreshNotifier;
+  final ValueNotifier<bool>? scrollNotifier;
+
+  const HomeScreen({super.key, this.refreshNotifier, this.scrollNotifier});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -21,6 +25,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final WebsiteScraper _scraper = WebsiteScraper();
+  final ScrollController _scrollController = ScrollController();
 
   WebsiteContent? _websiteContent;
   bool _isLoading = true;
@@ -30,12 +35,44 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadContent();
+    // Listen to refresh notifications
+    widget.refreshNotifier?.addListener(_onRefreshRequested);
+    // Listen to scroll-to-top notifications
+    widget.scrollNotifier?.addListener(_onScrollRequested);
+  }
+
+  void _onRefreshRequested() {
+    refresh();
+  }
+
+  void _onScrollRequested() {
+    scrollToTop();
   }
 
   @override
   void dispose() {
+    widget.refreshNotifier?.removeListener(_onRefreshRequested);
+    widget.scrollNotifier?.removeListener(_onScrollRequested);
+    _scrollController.dispose();
     _scraper.dispose();
     super.dispose();
+  }
+
+  void refresh() {
+    // Scroll to top
+    scrollToTop();
+    // Refresh content
+    _loadContent(forceRefresh: true);
+  }
+
+  void scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   Future<void> _loadContent({bool forceRefresh = false}) async {
@@ -83,6 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onRefresh: () => _loadContent(forceRefresh: true),
           color: const Color(0xFF0B73DA),
           child: SingleChildScrollView(
+            controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,29 +159,36 @@ class _HomeScreenState extends State<HomeScreen> {
                 constraints: const BoxConstraints(
                   maxHeight: 90,
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(36),
-                  child: Container(
-                    height: 90,
-                    alignment: Alignment.center,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      height: 90,
+                      alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: isDark
-                          ? const Color(0xFF101922)
+                          ? Colors.white
                           : const Color(0xFFF5F7F8),
                     ),
-                    child: Transform.scale(
-                      scale: 1.2,
-                      alignment: Alignment.center,
-                      child: Container(
-                        color: isDark
-                            ? const Color(0xFF101922)
-                            : const Color(0xFFF5F7F8),
-                        child: Image.asset(
-                          'assets/images/letterhead.png',
-                          fit: BoxFit.fitWidth,
-                          alignment: Alignment.center,
-                          filterQuality: FilterQuality.high,
-                          width: double.infinity,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12.0,
+                        vertical: 8.0,
+                      ),
+                      child: Transform.scale(
+                        scale: 1.2,
+                        alignment: Alignment.center,
+                        child: Container(
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFFF5F7F8),
+                          child: Image.asset(
+                            'assets/images/letterhead.png',
+                            fit: BoxFit.fitWidth,
+                            alignment: Alignment.center,
+                            filterQuality: FilterQuality.high,
+                            width: double.infinity,
                       errorBuilder: (context, error, stackTrace) {
                         return Icon(
                           Icons.broken_image_outlined,
@@ -157,7 +202,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                     ),
                   ),
-                ),
+                      ),
+                    ),
+                  ),
               ),
             ),
           ),
@@ -206,10 +253,10 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Welcome, Bhumin',
+            'Quote of the day',
             style: TextStyle(
               color: isDark ? Colors.white : const Color(0xFF424242),
-              fontSize: 32,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               letterSpacing: -0.015,
             ),
@@ -521,6 +568,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildResourcesSection(BuildContext context, bool isDark) {
     final quickLinks = [
       {
+        'icon': Icons.restaurant_menu,
+        'label': 'SNACK SIGNUP',
+        'url': 'internal://snack-signup',
+      },
+      {
         'icon': Icons.school,
         'label': 'CURRICULAR CLASSES',
         'url': 'internal://class/Curricular Classes',
@@ -705,6 +757,12 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.of(
           context,
         ).push(MaterialPageRoute(builder: (_) => const AdmissionsScreen()));
+        return;
+      }
+      if (url == 'internal://snack-signup') {
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const SnackSignupScreen()));
         return;
       }
       return;

@@ -49,6 +49,14 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  final ValueNotifier<int> _homeRefreshNotifier = ValueNotifier<int>(0);
+  
+  // Notifiers to trigger scroll-to-top for each tab
+  final ValueNotifier<bool> _homeScrollNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> _aboutScrollNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> _eventsScrollNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> _calendarScrollNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> _contactScrollNotifier = ValueNotifier<bool>(false);
 
   final List<Map<String, String>> _tabs = [
     {'title': 'Home', 'url': 'https://www.vidyapith.org'},
@@ -70,6 +78,17 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   @override
+  void dispose() {
+    _homeRefreshNotifier.dispose();
+    _homeScrollNotifier.dispose();
+    _aboutScrollNotifier.dispose();
+    _eventsScrollNotifier.dispose();
+    _calendarScrollNotifier.dispose();
+    _contactScrollNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(
@@ -80,23 +99,26 @@ class _MainScreenState extends State<MainScreen> {
 
           // Use HomeScreen for the first tab (Home)
           if (index == 0) {
-            return const HomeScreen();
+            return HomeScreen(
+              refreshNotifier: _homeRefreshNotifier,
+              scrollNotifier: _homeScrollNotifier,
+            );
           }
 
           if (index == 1) {
-            return const AboutScreen();
+            return AboutScreen(scrollNotifier: _aboutScrollNotifier);
           }
 
           if (index == 2) {
-            return const EventsScreen();
+            return EventsScreen(scrollNotifier: _eventsScrollNotifier);
           }
 
           if (index == 3) {
-            return const CalendarScreen();
+            return CalendarScreen(scrollNotifier: _calendarScrollNotifier);
           }
 
           if (index == 4) {
-            return const ContactScreen();
+            return ContactScreen(scrollNotifier: _contactScrollNotifier);
           }
 
           return WebViewTab(url: tab['url']!, title: tab['title']!);
@@ -121,7 +143,31 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
         onDestinationSelected: (index) {
+          if (index == 0 && _currentIndex == 0) {
+            // If Home is already selected, refresh it
+            _homeRefreshNotifier.value = _homeRefreshNotifier.value + 1;
+          }
+          
           setState(() => _currentIndex = index);
+          
+          // Scroll to top for the selected tab
+          switch (index) {
+            case 0:
+              _homeScrollNotifier.value = !_homeScrollNotifier.value;
+              break;
+            case 1:
+              _aboutScrollNotifier.value = !_aboutScrollNotifier.value;
+              break;
+            case 2:
+              _eventsScrollNotifier.value = !_eventsScrollNotifier.value;
+              break;
+            case 3:
+              _calendarScrollNotifier.value = !_calendarScrollNotifier.value;
+              break;
+            case 4:
+              _contactScrollNotifier.value = !_contactScrollNotifier.value;
+              break;
+          }
         },
       ),
     );
