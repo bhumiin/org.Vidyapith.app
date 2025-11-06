@@ -1,7 +1,21 @@
 import 'package:flutter/material.dart';
 import '../theme/shadcn_theme.dart';
 
-/// ShadCN-style Badge component
+/// A badge component styled like ShadCN UI.
+/// 
+/// Badges are small labels used to display status, counts, or categories.
+/// They support multiple variants (default, secondary, destructive, outline)
+/// and sizes (sm, default, lg).
+/// 
+/// Example usage:
+/// ```dart
+/// ShadBadge(
+///   text: 'New',
+///   variant: ShadBadgeVariant.default_,
+///   size: ShadBadgeSize.default_,
+///   icon: Icon(Icons.star),
+/// )
+/// ```
 class ShadBadge extends StatelessWidget {
   final String text;
   final ShadBadgeVariant variant;

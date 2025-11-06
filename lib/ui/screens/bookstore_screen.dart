@@ -8,6 +8,19 @@ import '../components/button.dart';
 import '../components/card.dart';
 import '../theme/shadcn_theme.dart';
 
+/// Bookstore Screen - This screen displays information about the Vidyapith bookstore.
+/// 
+/// What this screen does:
+/// - Shows an "About Us" section explaining what the bookstore offers
+/// - Displays the bookstore location/address
+/// - Shows bookstore hours of operation
+/// - Provides contact email with a button to send an email
+/// - Fetches all bookstore information from the Vidyapith website automatically
+/// 
+/// How users interact with it:
+/// - Scroll through bookstore information
+/// - Tap "Email Bookstore" button to open email app and contact the bookstore
+/// - Pull down to refresh and get the latest bookstore information
 class BookstoreScreen extends StatefulWidget {
   const BookstoreScreen({super.key});
 
@@ -163,6 +176,8 @@ class _BookstoreScreenState extends State<BookstoreScreen> {
     );
   }
 
+  /// Builds the "About Us" card with bookstore description and thumbnail image.
+  /// Shows what the bookstore offers and displays a photo of the bookstore.
   Widget _buildAboutCard(BuildContext context, BookstoreContent content) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -218,6 +233,8 @@ class _BookstoreScreenState extends State<BookstoreScreen> {
     );
   }
 
+  /// Builds the location card showing the bookstore address.
+  /// Displays the address with a location icon for easy identification.
   Widget _buildLocationCard(BuildContext context, List<String> locationLines) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -271,6 +288,8 @@ class _BookstoreScreenState extends State<BookstoreScreen> {
     );
   }
 
+  /// Builds the hours card showing when the bookstore is open.
+  /// Displays operating hours with a clock icon for easy identification.
   Widget _buildHoursCard(BuildContext context, List<String> hours) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -324,6 +343,8 @@ class _BookstoreScreenState extends State<BookstoreScreen> {
     );
   }
 
+  /// Builds the contact card with bookstore email and a button to send an email.
+  /// Shows the contact email address and provides a button to open the email app.
   Widget _buildContactCard(BuildContext context, String email) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;

@@ -10,7 +10,29 @@ import '../theme/shadcn_theme.dart';
 import 'admissions_screen.dart';
 import '../components/logo_leading.dart';
 
+/// Contact Screen - This screen provides all contact information and ways to reach Vidyapith.
+/// 
+/// What this screen does:
+/// - Displays a hero image of Vidyapith at the top
+/// - Shows quick contact options (phone and map buttons)
+/// - Provides instructions for reporting absences or tardiness
+/// - Links to the admissions page
+/// - Shows class registration forms (Monday Scriptural Class, Tabla Class)
+/// - Displays email contacts (Registration Email, Alumni Email)
+/// - Shows the mailing address
+/// - Displays any general notices or announcements
+/// - Fetches all contact information from the Vidyapith website automatically
+/// 
+/// How users interact with it:
+/// - Tap phone button to call Vidyapith office
+/// - Tap "View on Map" to open the address in Google Maps
+/// - Tap email buttons to open email app with pre-filled recipient
+/// - Tap form buttons to open registration forms in a browser
+/// - Tap "View Admissions" to navigate to the admissions screen
+/// - Pull down to refresh and get the latest contact information
 class ContactScreen extends StatefulWidget {
+  /// Allows other parts of the app to request that this screen scroll to the top.
+  /// Used when the user switches to the Contact tab.
   final ValueNotifier<bool>? scrollNotifier;
 
   const ContactScreen({super.key, this.scrollNotifier});
@@ -19,11 +41,26 @@ class ContactScreen extends StatefulWidget {
   State<ContactScreen> createState() => _ContactScreenState();
 }
 
+/// Internal state class that manages the contact screen's behavior and display.
 class _ContactScreenState extends State<ContactScreen> {
+  /// Service that fetches contact information from the Vidyapith website.
+  /// It scrapes the website to get phone numbers, addresses, emails, form URLs, etc.
   late final WebsiteScraper _scraper;
+  
+  /// Controller that manages scrolling on the page.
+  /// Allows the screen to programmatically scroll when needed.
   final ScrollController _scrollController = ScrollController();
+  
+  /// The contact information that was fetched from the website.
+  /// This is null until content is loaded.
   ContactContent? _content;
+  
+  /// Tracks whether we're currently loading contact information from the website.
+  /// Shows a loading spinner while true.
   bool _isLoading = true;
+  
+  /// Stores any error message if loading contact information fails.
+  /// Displayed to the user if something goes wrong (network error, etc.).
   String? _errorMessage;
 
   @override
@@ -306,6 +343,8 @@ class _ContactScreenState extends State<ContactScreen> {
     );
   }
 
+  /// Builds the quick contact card with phone and map buttons.
+  /// This card appears at the top and provides the fastest way to call or find Vidyapith.
   Widget _buildQuickContactCard(
       BuildContext context, ContactContent content) {
     final theme = Theme.of(context);
@@ -371,6 +410,9 @@ class _ContactScreenState extends State<ContactScreen> {
     );
   }
 
+  /// Builds the absence/tardy reporting card.
+  /// Shows instructions on how to report when a child will be absent or late.
+  /// Parents must call the office AND email the homeroom teacher by 8:30am.
   Widget _buildAbsenceTardyCard(
       BuildContext context, ContactContent content) {
     final theme = Theme.of(context);
@@ -477,6 +519,8 @@ class _ContactScreenState extends State<ContactScreen> {
     );
   }
 
+  /// Builds the admissions card with a button to navigate to the admissions screen.
+  /// Provides information about admissions inquiries and links to the admissions page.
   Widget _buildAdmissionsCard(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -539,6 +583,9 @@ class _ContactScreenState extends State<ContactScreen> {
     );
   }
 
+  /// Builds the class forms card with buttons to open registration forms.
+  /// Shows buttons for Monday Scriptural Class Form and Tabla Class Form if available.
+  /// Each button opens the form in an external browser.
   Widget _buildFormsCard(BuildContext context, ContactContent content) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -603,6 +650,9 @@ class _ContactScreenState extends State<ContactScreen> {
     );
   }
 
+  /// Builds the email contacts card with buttons to open email app.
+  /// Shows buttons for Registration Email and Alumni Email if available.
+  /// Each button opens the user's email app with the address pre-filled.
   Widget _buildEmailsCard(BuildContext context, ContactContent content) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -666,6 +716,8 @@ class _ContactScreenState extends State<ContactScreen> {
     );
   }
 
+  /// Builds the mailing address card.
+  /// Displays the complete Vidyapith mailing address with a location icon.
   Widget _buildAddressCard(BuildContext context, List<String> addressLines) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -725,6 +777,8 @@ class _ContactScreenState extends State<ContactScreen> {
     );
   }
 
+  /// Builds the general notice card.
+  /// Displays any important announcements or notices from Vidyapith.
   Widget _buildNoticeCard(BuildContext context, ContactContent content) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -782,6 +836,8 @@ class _ContactScreenState extends State<ContactScreen> {
     );
   }
 
+  /// Opens the user's phone dialer with the Vidyapith phone number pre-filled.
+  /// This is called when the user taps the phone button in the quick contact card.
   Future<void> _launchPhone(String phone) async {
     final uri = Uri(scheme: 'tel', path: phone);
 
@@ -800,6 +856,9 @@ class _ContactScreenState extends State<ContactScreen> {
     }
   }
 
+  /// Opens Google Maps with the Vidyapith address pre-filled.
+  /// This is called when the user taps the "View on Map" button.
+  /// The address is formatted and opened in the user's default map app.
   Future<void> _launchMap(List<String> addressLines) async {
     final address = addressLines.join(', ');
     final uri = Uri(
@@ -823,6 +882,8 @@ class _ContactScreenState extends State<ContactScreen> {
     }
   }
 
+  /// Opens the user's email app with a new message addressed to the specified email.
+  /// This is called when the user taps an email button (Registration Email, Alumni Email, etc.).
   Future<void> _launchEmail(String email) async {
     final uri = Uri(scheme: 'mailto', path: email);
 
@@ -841,6 +902,9 @@ class _ContactScreenState extends State<ContactScreen> {
     }
   }
 
+  /// Opens a URL in the user's external browser.
+  /// This is used for registration forms and other external links.
+  /// If the URL is invalid or cannot be opened, shows an error message.
   Future<void> _launchUrl(String url) async {
     final uri = Uri.tryParse(url);
 
@@ -866,6 +930,8 @@ class _ContactScreenState extends State<ContactScreen> {
     }
   }
 
+  /// Navigates to the Admissions screen when the user taps "View Admissions".
+  /// Opens a new screen showing detailed admissions information and forms.
   void _navigateToAdmissions(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -874,6 +940,9 @@ class _ContactScreenState extends State<ContactScreen> {
     );
   }
 
+  /// Displays a temporary error message at the bottom of the screen.
+  /// Used when phone, email, map, or URL actions fail (e.g., no app installed).
+  /// The message appears briefly and then disappears automatically.
   void _showLaunchError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

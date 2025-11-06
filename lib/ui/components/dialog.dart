@@ -3,7 +3,23 @@ import '../theme/shadcn_theme.dart';
 import 'button.dart';
 import 'alert.dart';
 
-/// ShadCN-style Dialog component
+/// A dialog component styled like ShadCN UI.
+/// 
+/// Dialogs are modal overlays that require user interaction. They can contain
+/// titles, descriptions, content, and action buttons. Perfect for confirmations,
+/// forms, or important information.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadDialog(
+///   title: 'Confirm Delete',
+///   description: 'Are you sure you want to delete this item?',
+///   actions: [
+///     ShadButton(text: 'Cancel', variant: ShadButtonVariant.outline),
+///     ShadButton(text: 'Delete', variant: ShadButtonVariant.destructive),
+///   ],
+/// )
+/// ```
 class ShadDialog extends StatelessWidget {
   final String? title;
   final String? description;
@@ -147,7 +163,21 @@ class ShadDialog extends StatelessWidget {
   }
 }
 
-/// ShadCN-style Alert Dialog component
+/// A pre-configured alert dialog with confirm and cancel buttons.
+/// 
+/// This is a convenience widget that combines ShadDialog with standard
+/// alert dialog functionality. Perfect for confirmations and simple alerts.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadAlertDialog(
+///   title: 'Delete Item',
+///   description: 'This action cannot be undone',
+///   onConfirm: () => deleteItem(),
+///   onCancel: () => Navigator.pop(context),
+///   variant: ShadAlertVariant.destructive,
+/// )
+/// ```
 class ShadAlertDialog extends StatelessWidget {
   final String? title;
   final String? description;
@@ -197,7 +227,19 @@ class ShadAlertDialog extends StatelessWidget {
   }
 }
 
-/// ShadCN-style Dialog Service
+/// A service for easily showing dialogs throughout your app.
+/// 
+/// This service provides convenient methods to show dialogs and alert dialogs
+/// without manually managing dialog state.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadDialogService.showDialog(
+///   context: context,
+///   title: 'Settings',
+///   content: SettingsForm(),
+/// )
+/// ```
 class ShadDialogService {
   static Future<T?> showDialog<T>({
     required BuildContext context,

@@ -1,7 +1,20 @@
 import 'package:flutter/material.dart';
 import '../theme/shadcn_theme.dart';
 
-/// ShadCN-style Alert component
+/// An alert component styled like ShadCN UI.
+/// 
+/// Alerts display important messages to users. They support multiple variants
+/// (default, destructive, warning, success) with appropriate colors and icons.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadAlert(
+///   title: 'Important Notice',
+///   description: 'Please update your profile',
+///   variant: ShadAlertVariant.warning,
+///   onClose: () => dismissAlert(),
+/// )
+/// ```
 class ShadAlert extends StatelessWidget {
   final String? title;
   final String? description;
@@ -188,7 +201,20 @@ enum ShadAlertVariant {
   success,
 }
 
-/// ShadCN-style Toast component
+/// A toast notification component.
+/// 
+/// Toasts are temporary messages that appear at the top of the screen.
+/// They automatically disappear after a specified duration.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadToast(
+///   title: 'Success!',
+///   description: 'Your changes have been saved',
+///   variant: ShadAlertVariant.success,
+///   duration: Duration(seconds: 3),
+/// )
+/// ```
 class ShadToast extends StatelessWidget {
   final String title;
   final String? description;
@@ -219,7 +245,19 @@ class ShadToast extends StatelessWidget {
   }
 }
 
-/// ShadCN-style Toast Service
+/// A service for showing toast notifications easily.
+/// 
+/// This service provides a convenient way to display toast messages
+/// without manually creating overlay entries.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadToastService.show(
+///   context,
+///   title: 'Saved!',
+///   variant: ShadAlertVariant.success,
+/// )
+/// ```
 class ShadToastService {
   static void show(
     BuildContext context, {

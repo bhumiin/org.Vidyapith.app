@@ -7,7 +7,23 @@ import '../../models/website_content.dart';
 import '../../services/website_scraper.dart';
 import '../components/logo_leading.dart';
 
+/// Events Screen - This screen displays a list of special events from the Vidyapith website.
+/// 
+/// What this screen does:
+/// - Shows a scrollable list of events with images, titles, and descriptions
+/// - Fetches event information from the Vidyapith website automatically
+/// - Displays event images that load from the internet
+/// - Shows loading indicators while events are being fetched
+/// - Handles errors gracefully if events cannot be loaded
+/// 
+/// How users interact with it:
+/// - Scroll through the list to see all events
+/// - Pull down to refresh and get the latest events from the website
+/// - View event images and details for each event
+/// - Tap the notification icon (currently not functional) for future notification features
 class EventsScreen extends StatefulWidget {
+  /// Allows other parts of the app to request that this screen scroll to the top.
+  /// Used when the user switches to the Events tab.
   final ValueNotifier<bool>? scrollNotifier;
 
   const EventsScreen({super.key, this.scrollNotifier});
@@ -16,12 +32,26 @@ class EventsScreen extends StatefulWidget {
   State<EventsScreen> createState() => _EventsScreenState();
 }
 
+/// Internal state class that manages the events screen's behavior and display.
 class _EventsScreenState extends State<EventsScreen> {
+  /// Service that fetches events from the Vidyapith website.
+  /// It scrapes the website to get event images, titles, and descriptions.
   final WebsiteScraper _scraper = WebsiteScraper();
+  
+  /// Controller that manages scrolling on the page.
+  /// Allows the screen to programmatically scroll when needed.
   final ScrollController _scrollController = ScrollController();
 
+  /// The events data that was fetched from the website.
+  /// This is null until content is loaded.
   EventsContent? _eventsContent;
+  
+  /// Tracks whether we're currently loading events from the website.
+  /// Shows a loading spinner while true.
   bool _isLoading = true;
+  
+  /// Stores any error message if loading events fails.
+  /// Displayed to the user if something goes wrong (network error, etc.).
   String? _errorMessage;
 
   @override
@@ -171,6 +201,8 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 
+  /// Builds the list of events displayed on the screen.
+  /// Shows loading state, empty state, error state, or the actual events list as appropriate.
   Widget _buildEventsList(BuildContext context, bool isDark) {
     final events = _eventsContent?.events ?? [];
     final bool isLoadingEvents = _isLoading && events.isEmpty;
@@ -208,6 +240,8 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 
+  /// Builds a single event card showing the event image, title, and description.
+  /// Each event is displayed as a card with the image at the top and text content below.
   Widget _buildEventCard(
     BuildContext context,
     bool isDark,
@@ -274,6 +308,8 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 
+  /// Shows a loading placeholder while events are being fetched.
+  /// Displays a spinner inside a card-shaped container that matches the event card size.
   Widget _buildLoadingEventPlaceholder(bool isDark) {
     return ShadCard(
       child: Container(
@@ -292,6 +328,8 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 
+  /// Shows a status message (either "No events" or error message).
+  /// Used when there are no events to display or when loading fails.
   Widget _buildStatusMessage(String message, bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: ShadCNTheme.space2),
@@ -309,13 +347,22 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 }
 
+/// Widget that displays an event image with loading and error handling.
+/// This widget:
+/// - Shows a loading spinner while the image is downloading from the internet
+/// - Displays the image once it's loaded
+/// - Shows a broken image icon if the image fails to load
+/// - Applies a subtle dark overlay to make the image more readable
 class _EventImage extends StatelessWidget {
   const _EventImage({
     required this.imageUrl,
     required this.isDark,
   });
 
+  /// The web address (URL) of the event image to display.
   final String imageUrl;
+  
+  /// Whether the app is in dark mode (affects background colors while loading).
   final bool isDark;
 
   @override

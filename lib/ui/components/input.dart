@@ -2,7 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/shadcn_theme.dart';
 
-/// ShadCN-style Input component
+/// A customizable text input field styled like ShadCN UI.
+/// 
+/// Supports labels, placeholders, helper text, error messages, icons,
+/// validation, and automatic focus state management. Adapts to light/dark themes.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadInput(
+///   label: 'Email',
+///   placeholder: 'Enter your email',
+///   controller: emailController,
+///   keyboardType: TextInputType.emailAddress,
+///   errorText: 'Please enter a valid email',
+/// )
+/// ```
 class ShadInput extends StatefulWidget {
   final String? label;
   final String? placeholder;
@@ -82,6 +96,8 @@ class _ShadInputState extends State<ShadInput> {
     super.dispose();
   }
 
+  /// Updates the focus state when the input gains or loses focus
+  /// This is used to change the border color when focused
   void _onFocusChange() {
     setState(() {
       _isFocused = _focusNode.hasFocus;
@@ -120,13 +136,15 @@ class _ShadInputState extends State<ShadInput> {
     );
   }
 
+  /// Builds the actual text input field with appropriate styling
   Widget _buildInput(ThemeData theme, bool isDark) {
     final hasError = widget.errorText != null;
+    // Border color changes based on state: error (red) > focused (ring color) > default (input color)
     final borderColor = hasError
         ? (isDark ? ShadCNTheme.darkDestructive : ShadCNTheme.destructive)
         : _isFocused
-            ? (isDark ? ShadCNTheme.darkRing : ShadCNTheme.ring)
-            : (isDark ? ShadCNTheme.darkInput : ShadCNTheme.input);
+            ? (isDark ? ShadCNTheme.darkRing : ShadCNTheme.ring) // Highlight when focused
+            : (isDark ? ShadCNTheme.darkInput : ShadCNTheme.input); // Default border
 
     return Container(
       decoration: BoxDecoration(
@@ -219,7 +237,20 @@ enum ShadInputSize {
   lg,
 }
 
-/// ShadCN-style Textarea component
+/// A multi-line text input field (textarea) styled like ShadCN UI.
+/// 
+/// This is essentially a ShadInput configured for multi-line text entry.
+/// Perfect for longer text inputs like comments, descriptions, or messages.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadTextarea(
+///   label: 'Message',
+///   placeholder: 'Enter your message...',
+///   minLines: 3,
+///   maxLines: 6,
+/// )
+/// ```
 class ShadTextarea extends StatelessWidget {
   final String? label;
   final String? placeholder;

@@ -1,14 +1,37 @@
 import 'package:flutter/material.dart';
 import '../theme/shadcn_theme.dart';
 
-/// ShadCN-style Button component
+/// A customizable button component styled like ShadCN UI.
+/// 
+/// This button supports multiple variants (default, destructive, outline, etc.),
+/// different sizes, loading states, and icons. It automatically adapts to
+/// light and dark themes.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadButton(
+///   text: 'Click Me',
+///   onPressed: () => print('Button clicked'),
+///   variant: ShadButtonVariant.default_,
+///   size: ShadButtonSize.default_,
+///   isLoading: false,
+///   icon: Icon(Icons.add),
+/// )
+/// ```
 class ShadButton extends StatelessWidget {
+  /// The text to display on the button
   final String text;
+  /// Callback function called when button is pressed (null = disabled)
   final VoidCallback? onPressed;
+  /// Button style variant (default_, destructive, outline, secondary, ghost, link)
   final ShadButtonVariant variant;
+  /// Button size (sm, default_, lg, icon)
   final ShadButtonSize size;
+  /// Shows a loading spinner instead of the button content
   final bool isLoading;
+  /// Optional icon to display before the text
   final Widget? icon;
+  /// Makes the button take full width of its container
   final bool fullWidth;
 
   const ShadButton({
@@ -130,13 +153,16 @@ class ShadButton extends StatelessWidget {
     }
   }
 
+  /// Builds the button's child widget (text, icon, or loading spinner)
   Widget _buildChild() {
+    // Show loading spinner when isLoading is true
     if (isLoading) {
       return SizedBox(
         width: _getIconSize(),
         height: _getIconSize(),
         child: CircularProgressIndicator(
           strokeWidth: 2,
+          // Use white spinner for filled buttons, grey for outlined buttons
           valueColor: AlwaysStoppedAnimation<Color>(
             variant == ShadButtonVariant.default_ || variant == ShadButtonVariant.destructive
                 ? Colors.white
@@ -146,6 +172,7 @@ class ShadButton extends StatelessWidget {
       );
     }
 
+    // Show icon + text if icon is provided
     if (icon != null) {
       return Row(
         mainAxisSize: MainAxisSize.min,
@@ -157,6 +184,7 @@ class ShadButton extends StatelessWidget {
       );
     }
 
+    // Just show text if no icon
     return Text(text);
   }
 
@@ -225,7 +253,19 @@ enum ShadButtonSize {
   icon,
 }
 
-/// Icon-only button variant
+/// A button that displays only an icon (no text).
+/// 
+/// This is a convenience widget for creating icon-only buttons.
+/// It's essentially a ShadButton with size set to icon.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadIconButton(
+///   icon: Icons.delete,
+///   onPressed: () => deleteItem(),
+///   variant: ShadButtonVariant.destructive,
+/// )
+/// ```
 class ShadIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onPressed;

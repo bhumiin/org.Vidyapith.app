@@ -1,7 +1,20 @@
 import 'package:flutter/material.dart';
 import '../theme/shadcn_theme.dart';
 
-/// ShadCN-style Radio component
+/// A radio button component styled like ShadCN UI.
+/// 
+/// Radio buttons allow users to select exactly one option from a group.
+/// Supports labels, helper text, error messages, and multiple sizes.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadRadio<String>(
+///   value: 'option1',
+///   groupValue: selectedOption,
+///   onChanged: (value) => setState(() => selectedOption = value),
+///   label: 'Option 1',
+/// )
+/// ```
 class ShadRadio<T> extends StatefulWidget {
   final T value;
   final T? groupValue;
@@ -126,7 +139,23 @@ enum ShadRadioSize {
   lg,
 }
 
-/// ShadCN-style Radio Group component
+/// A group of radio buttons that allows single selection.
+/// 
+/// This widget manages a list of radio buttons and tracks which one is selected.
+/// Supports horizontal and vertical layouts.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadRadioGroup<String>(
+///   label: 'Choose your plan',
+///   options: [
+///     ShadRadioOption(value: 'basic', label: 'Basic'),
+///     ShadRadioOption(value: 'premium', label: 'Premium'),
+///   ],
+///   value: selectedPlan,
+///   onChanged: (value) => setState(() => selectedPlan = value),
+/// )
+/// ```
 class ShadRadioGroup<T> extends StatefulWidget {
   final List<ShadRadioOption<T>> options;
   final T? value;
@@ -225,8 +254,13 @@ class _ShadRadioGroupState<T> extends State<ShadRadioGroup<T>> {
   }
 }
 
+/// Represents an option in a ShadRadioGroup.
+/// 
+/// Each option has a value and a label.
 class ShadRadioOption<T> {
+  /// The value of the option (used to track selection)
   final T value;
+  /// The text displayed next to the radio button
   final String label;
 
   const ShadRadioOption({

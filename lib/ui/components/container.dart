@@ -1,7 +1,20 @@
 import 'package:flutter/material.dart';
 import '../theme/shadcn_theme.dart';
 
-/// ShadCN-style Container component
+/// A customizable container component styled like ShadCN UI.
+/// 
+/// This is a flexible container widget with support for padding, margins,
+/// borders, shadows, and tap actions. Perfect for creating custom layouts.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadContainer(
+///   child: Text('Content'),
+///   padding: EdgeInsets.all(16),
+///   borderRadius: BorderRadius.circular(8),
+///   onTap: () => handleTap(),
+/// )
+/// ```
 class ShadContainer extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -62,7 +75,19 @@ class ShadContainer extends StatelessWidget {
   }
 }
 
-/// ShadCN-style Section component for content sections
+/// A section component for organizing content with optional headers and footers.
+/// 
+/// Sections are useful for grouping related content together with consistent
+/// spacing and optional titles/descriptions.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadSection(
+///   title: 'About Us',
+///   description: 'Learn more about our organization',
+///   child: Text('Section content...'),
+/// )
+/// ```
 class ShadSection extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -137,7 +162,18 @@ class ShadSection extends StatelessWidget {
   }
 }
 
-/// ShadCN-style Flex component for flexible layouts
+/// A flexible layout component that arranges children in a row or column.
+/// 
+/// This widget provides easy spacing between children and consistent styling.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadFlex(
+///   direction: Axis.horizontal,
+///   spacing: 16,
+///   children: [Widget1(), Widget2(), Widget3()],
+/// )
+/// ```
 class ShadFlex extends StatelessWidget {
   final List<Widget> children;
   final Axis direction;
@@ -201,7 +237,17 @@ class ShadFlex extends StatelessWidget {
   }
 }
 
-/// ShadCN-style Grid component
+/// A grid layout component for displaying items in a grid.
+/// 
+/// Perfect for creating card grids, image galleries, or any grid-based layouts.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadGrid(
+///   crossAxisCount: 2,
+///   children: [Card1(), Card2(), Card3(), Card4()],
+/// )
+/// ```
 class ShadGrid extends StatelessWidget {
   final List<Widget> children;
   final int crossAxisCount;
@@ -249,7 +295,19 @@ class ShadGrid extends StatelessWidget {
   }
 }
 
-/// ShadCN-style Stack component
+/// A stack component for overlaying widgets on top of each other.
+/// 
+/// Useful for creating layered layouts, badges on avatars, or floating elements.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadStack(
+///   children: [
+///     BackgroundImage(),
+///     PositionedText(),
+///   ],
+/// )
+/// ```
 class ShadStack extends StatelessWidget {
   final List<Widget> children;
   final AlignmentGeometry alignment;

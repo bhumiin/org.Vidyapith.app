@@ -8,7 +8,25 @@ import '../theme/shadcn_theme.dart';
 import '../components/button.dart';
 import '../components/card.dart';
 
+/// Class Detail Screen - This screen shows detailed information about a specific class category.
+/// 
+/// What this screen does:
+/// - Displays detailed information based on the class type selected:
+///   - Curricular Classes: Shows classes for youngsters (K-12) and adults, with schedules
+///   - Music Classes: Shows Vocal and Tabla classes side-by-side (on tablets) or stacked (on phones)
+///   - Summer Camp: Shows summer camp information and description
+/// - Fetches class details from the Vidyapith website automatically
+/// - Shows class images, schedules, teacher information, and descriptions
+/// - Provides buttons to open inquiry forms for music classes
+/// 
+/// How users interact with it:
+/// - Scroll through the detailed class information
+/// - On Music Classes screen: View Vocal and Tabla classes (side-by-side on tablets)
+/// - Tap "OPEN INQUIRY FORM" buttons to open registration forms in a browser
+/// - View class schedules, teacher names, and descriptions
 class ClassDetailScreen extends StatefulWidget {
+  /// The title of the class category (e.g., "Curricular Classes", "Music Classes", "Summer Camp").
+  /// This determines which content to fetch and display.
   final String title;
 
   const ClassDetailScreen({super.key, required this.title});
@@ -95,6 +113,12 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
     );
   }
 
+  /// Builds the content for Curricular Classes.
+  /// Displays:
+  /// - A thumbnail image of the classes
+  /// - Information about classes for youngsters (Kindergarten through 12th Grade)
+  /// - Information about classes for adults
+  /// Each section shows schedules, descriptions, and other details.
   Widget _buildCurricularContent(
     CurricularClassesContent content,
     ThemeData theme,
@@ -241,6 +265,12 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
     );
   }
 
+  /// Builds the content for Music Classes.
+  /// Displays:
+  /// - Vocal classes section on the left (or top on phones)
+  /// - Tabla classes section on the right (or bottom on phones)
+  /// Each section shows thumbnail image, teacher names, schedule, description, and inquiry form button.
+  /// On tablets (wide screens), sections are displayed side-by-side for better viewing.
   Widget _buildMusicContent(
     MusicClassesContent content,
     ThemeData theme,
@@ -300,6 +330,9 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
     );
   }
 
+  /// Builds a single music class section (either Vocal or Tabla).
+  /// Displays the thumbnail image, class title, teacher names, schedule, description,
+  /// and an inquiry form button if available.
   Widget _buildMusicSection(
     MusicClassSection section,
     String thumbnailUrl,
@@ -441,6 +474,9 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
     );
   }
 
+  /// Opens a registration form URL in the user's external browser.
+  /// This is called when the user taps "OPEN INQUIRY FORM" on a music class section.
+  /// If the URL cannot be opened, shows an error message.
   Future<void> _handleFormUrl(String url) async {
     final uri = Uri.tryParse(url);
 
@@ -505,6 +541,8 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
     );
   }
 
+  /// Builds the content for Summer Camp.
+  /// Displays the summer camp thumbnail image, title, and description.
   Widget _buildSummerCampContent(
     SummerCampContent content,
     ThemeData theme,

@@ -8,6 +8,21 @@ import '../components/card.dart';
 import '../theme/shadcn_theme.dart';
 import '../components/branded_app_bar.dart';
 
+/// Admissions Screen - This screen displays all admissions information and forms for Vidyapith.
+/// 
+/// What this screen does:
+/// - Shows information about new admissions
+/// - Displays Kindergarten admissions information with a link to the KG inquiry form
+/// - Shows Grades 1-5 admissions information with a link to the alternate route inquiry form
+/// - Displays the admissions policy
+/// - Shows the contact address for admissions inquiries
+/// - Fetches all admissions information from the Vidyapith website automatically
+/// 
+/// How users interact with it:
+/// - Scroll through all admissions sections
+/// - Tap form buttons (e.g., "2026-27 KG INQUIRY FORM") to open registration forms in a browser
+/// - View detailed admissions information for different grade levels
+/// - Pull down to refresh and get the latest admissions information
 class AdmissionsScreen extends StatefulWidget {
   const AdmissionsScreen({super.key});
 
@@ -181,6 +196,13 @@ class _AdmissionsScreenState extends State<AdmissionsScreen> {
     );
   }
 
+  /// Builds a section card for admissions information.
+  /// Displays a title, content text, and optionally a form button.
+  /// Used for:
+  /// - New Admissions section
+  /// - Kindergarten Admissions (with KG form button)
+  /// - Grades 1-5 Admissions (with alternate route form button)
+  /// - Admissions Policy section
   Widget _buildSectionCard(
     BuildContext context,
     String title,

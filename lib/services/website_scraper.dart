@@ -7,88 +7,223 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/website_content.dart';
 
+/// Service that scrapes (extracts) content from the Vidyapith website.
+/// 
+/// Web scraping means downloading HTML pages and extracting specific information
+/// from them (like text, images, links, etc.). This class:
+/// 
+/// - Downloads HTML pages from various Vidyapith website URLs
+/// - Parses the HTML to extract specific content (events, classes, contact info, etc.)
+/// - Caches the extracted data locally to avoid repeated network requests
+/// - Handles errors gracefully by falling back to cached data when available
+/// 
+/// The scraper supports multiple content types:
+/// - Homepage content (thought of the day, upcoming events, carousel images)
+/// - Events page content
+/// - Bookstore information
+/// - Donation information
+/// - Admissions information
+/// - Contact information
+/// - Class information (curricular, music, summer camp)
 class WebsiteScraper {
+  // ============================================================================
+  // CONSTRUCTOR
+  // ============================================================================
+  
+  /// Creates a new WebsiteScraper instance.
+  /// 
+  /// [client] - Optional HTTP client (for testing). If not provided, creates a new one.
+  ///            This allows us to inject a mock client during testing.
   WebsiteScraper({http.Client? client}) : _client = client ?? http.Client();
 
+  // ============================================================================
+  // CONSTANTS - Website URLs
+  // ============================================================================
+  // These are the URLs of different pages on the Vidyapith website that we scrape.
+  
+  /// Main homepage URL
   static const String _homepageUrl = 'https://www.vidyapith.org/';
+  
+  /// URL for the curricular classes page
   static const String _curricularClassesUrl =
       'https://www.vidyapith.org/curricular-classes.html';
+  
+  /// URL for the music classes page
   static const String _musicClassesUrl =
       'https://www.vidyapith.org/music-classes.html';
+  
+  /// URL for the summer camp page
   static const String _summerCampUrl =
       'https://www.vidyapith.org/summer-camp.html';
+  
+  /// URL for the events page
   static const String _eventsUrl = 'https://www.vidyapith.org/events.html';
+  
+  /// URL for the bookstore page
   static const String _bookstoreUrl =
       'https://www.vidyapith.org/bookstore.html';
+  
+  /// URL for the donation page
   static const String _donateUrl = 'https://www.vidyapith.org/donate.html';
+  
+  /// URL for the admissions page
   static const String _admissionsUrl =
       'https://www.vidyapith.org/admissions1.html';
+  
+  /// URL for the contact page
   static const String _contactUrl =
       'https://www.vidyapith.org/contact-us1.html';
+
+  // ============================================================================
+  // CONSTANTS - Cache Keys
+  // ============================================================================
+  // These keys identify where we store cached data in local storage (SharedPreferences).
+  // Each content type has its own cache key so they can be stored separately.
+  
+  /// Cache key for homepage content (thought of the day, events, images)
   static const String _cacheKey = 'website_content_cache_v1';
+  
+  /// Cache key for events page content
   static const String _eventsCacheKey = 'events_content_cache_v1';
+  
+  /// Cache key for bookstore content
   static const String _bookstoreCacheKey = 'bookstore_content_cache_v1';
+  
+  /// Cache key for donation content
   static const String _donateCacheKey = 'donate_content_cache_v1';
+  
+  /// Cache key for admissions content (v2 indicates this is version 2)
   static const String _admissionsCacheKey = 'admissions_content_cache_v2';
+  
+  /// Cache key for contact content
   static const String _contactCacheKey = 'contact_content_cache_v1';
+
+  // ============================================================================
+  // CONSTANTS - Cache Durations
+  // ============================================================================
+  // How long cached data remains valid before we fetch fresh data.
+  // 24 hours means data is refreshed once per day.
+  
+  /// How long homepage content cache is valid (24 hours)
   static const Duration _cacheDuration = Duration(hours: 24);
+  
+  /// How long events content cache is valid (24 hours)
   static const Duration _eventsCacheDuration = Duration(hours: 24);
+  
+  /// How long bookstore content cache is valid (24 hours)
   static const Duration _bookstoreCacheDuration = Duration(hours: 24);
+  
+  /// How long donation content cache is valid (24 hours)
   static const Duration _donateCacheDuration = Duration(hours: 24);
+  
+  /// How long admissions content cache is valid (24 hours)
   static const Duration _admissionsCacheDuration = Duration(hours: 24);
+  
+  /// How long contact content cache is valid (24 hours)
   static const Duration _contactCacheDuration = Duration(hours: 24);
+
+  // ============================================================================
+  // CONSTANTS - Other
+  // ============================================================================
+  
+  /// Parsed URI object for the homepage (used for resolving relative URLs)
   static final Uri _homepageUri = Uri.parse(_homepageUrl);
+  
+  /// Parsed URI object for the donate page
   static final Uri _donateUri = Uri.parse(_donateUrl);
+  
+  /// Fallback mailing address if we can't extract it from the website
+  /// Used as a backup when parsing fails
   static const List<String> _fallbackDonateAddress = [
     'Vivekananda Vidyapith',
     '20 Hinchman Avenue',
     'Wayne, NJ 07470',
   ];
 
+  // ============================================================================
+  // INSTANCE VARIABLES
+  // ============================================================================
+  
+  /// HTTP client used to make network requests to download web pages
   final http.Client _client;
 
+  // ============================================================================
+  // HOMEPAGE CONTENT METHODS
+  // ============================================================================
+  
+  /// Gets homepage content (thought of the day, events, carousel images).
+  /// 
+  /// Uses smart caching: checks for cached data first, and only fetches fresh data
+  /// if cache is expired or forceRefresh is true.
+  /// 
+  /// [forceRefresh] - If true, ignores cache and always fetches fresh data.
+  /// 
+  /// Returns: WebsiteContent with thought of the day, events, and carousel images.
   Future<WebsiteContent> getWebsiteContent({bool forceRefresh = false}) async {
+    // Get access to local storage
     final prefs = await SharedPreferences.getInstance();
     WebsiteContent? cachedContent;
 
+    // Try to load cached content from local storage
     final cachedJson = prefs.getString(_cacheKey);
     if (cachedJson != null) {
       try {
+        // Convert stored JSON string back to WebsiteContent object
         final Map<String, dynamic> json = Map<String, dynamic>.from(
           jsonDecode(cachedJson) as Map,
         );
         cachedContent = WebsiteContent.fromJson(json);
       } catch (_) {
+        // If JSON parsing fails, ignore corrupted cache and fetch fresh
         cachedContent = null;
       }
     }
 
+    // Check if we should use cached data
     if (!forceRefresh && cachedContent != null) {
+      // Calculate age of cached data
       final age = DateTime.now().difference(cachedContent.fetchedAt);
+      // If cache is still fresh (less than 24 hours old), return it
       if (age <= _cacheDuration) {
         return cachedContent;
       }
     }
 
+    // Cache expired or forceRefresh is true - fetch fresh data
     try {
       final freshContent = await fetchWebsiteContent();
+      // Save fresh data to cache
       try {
         await prefs.setString(_cacheKey, jsonEncode(freshContent.toJson()));
       } catch (_) {
+        // If cache save fails, don't worry - we still return fresh data
         // Cache write failures should not block returning fresh data.
       }
       return freshContent;
     } catch (_) {
+      // If fetch fails but we have cached data, return it as fallback
       if (cachedContent != null) {
         return cachedContent;
       }
+      // No cache available - rethrow the error so caller can handle it
       rethrow;
     }
   }
 
+  /// Fetches fresh homepage content from the website.
+  /// 
+  /// Downloads the homepage HTML, parses it, and extracts:
+  /// - Thought of the day
+  /// - Upcoming events
+  /// - Carousel images
+  /// 
+  /// Returns: Fresh WebsiteContent object.
+  /// Throws: http.ClientException if the HTTP request fails.
   Future<WebsiteContent> fetchWebsiteContent() async {
+    // Download the homepage HTML
     final response = await _client.get(Uri.parse(_homepageUrl));
 
+    // Check if the request was successful (status code 200 = OK)
     if (response.statusCode != 200) {
       throw http.ClientException(
         'Failed to load website content (status: ${response.statusCode})',
@@ -96,17 +231,21 @@ class WebsiteScraper {
       );
     }
 
+    // Parse the HTML into a document object we can search through
+    // utf8.decode converts the raw bytes to text, handling special characters
     final document = html_parser.parse(utf8.decode(response.bodyBytes));
 
+    // Extract different parts of the content using helper methods
     final thought = _parseThoughtOfTheDay(document);
     final events = _parseUpcomingEvents(document);
     final carouselImages = _parseCarouselImages(document);
 
+    // Combine everything into a WebsiteContent object
     return WebsiteContent(
       thoughtOfTheDay: thought,
       upcomingEvents: events,
       carouselImages: carouselImages,
-      fetchedAt: DateTime.now(),
+      fetchedAt: DateTime.now(), // Record when we fetched this data
     );
   }
 
@@ -1156,22 +1295,45 @@ class WebsiteScraper {
     return null;
   }
 
+  /// Helper method to clean HTML and extract plain text.
+  /// 
+  /// This method:
+  /// 1. Converts HTML line breaks (`<br>` tags) to newlines
+  /// 2. Parses the HTML to extract text content (removes all HTML tags)
+  /// 3. Replaces special characters (non-breaking spaces, zero-width spaces) with normal spaces
+  /// 4. Normalizes line endings (converts \r to \n)
+  /// 5. Removes empty lines and trims whitespace from each line
+  /// 
+  /// This is useful because HTML contains tags like `<p>`, `<div>`, `<strong>`, etc.
+  /// We only want the actual text content, not the formatting tags.
+  /// 
+  /// Example:
+  /// Input: `<p>Hello <strong>world</strong>!</p><br>Next line`
+  /// Output: `Hello world!\nNext line`
   String _cleanHtml(String html) {
+    // Convert HTML line breaks to newline characters
+    // This regex matches `<br>`, `<br/>`, `<br />`, etc. (case-insensitive)
     final withBreaks = html.replaceAll(
       RegExp(r'(<br\s*/?>)+', caseSensitive: false),
       '\n',
     );
+    
+    // Parse the HTML fragment to extract just the text content
+    // This removes all HTML tags and gives us plain text
     final fragment = html_parser.parseFragment(withBreaks);
+    
+    // Get the text content and clean up special characters
     final text = (fragment.text ?? '')
-        .replaceAll('\u00A0', ' ')
-        .replaceAll('\u200B', '')
-        .replaceAll('\r', '\n');
+        .replaceAll('\u00A0', ' ')  // Replace non-breaking space with regular space
+        .replaceAll('\u200B', '')   // Remove zero-width space characters
+        .replaceAll('\r', '\n');    // Normalize line endings (Windows uses \r\n)
 
+    // Split into lines, trim each line, remove empty lines, then join back
     return text
-        .split(RegExp(r'\n+'))
-        .map((line) => line.trim())
-        .where((line) => line.isNotEmpty)
-        .join('\n');
+        .split(RegExp(r'\n+'))           // Split on one or more newlines
+        .map((line) => line.trim())       // Remove leading/trailing whitespace from each line
+        .where((line) => line.isNotEmpty) // Remove empty lines
+        .join('\n');                      // Join back with single newlines
   }
 
   Future<EventsContent> getEventsContent({bool forceRefresh = false}) async {
@@ -2209,6 +2371,22 @@ class WebsiteScraper {
     );
   }
 
+  // ============================================================================
+  // CLEANUP
+  // ============================================================================
+  
+  /// Cleans up resources by closing the HTTP client.
+  /// 
+  /// Always call this when you're done with the WebsiteScraper to free up
+  /// network resources. This is especially important in long-running apps
+  /// to prevent memory leaks.
+  /// 
+  /// Example:
+  /// ```dart
+  /// final scraper = WebsiteScraper();
+  /// // ... use scraper ...
+  /// scraper.dispose(); // Clean up when done
+  /// ```
   void dispose() {
     _client.close();
   }

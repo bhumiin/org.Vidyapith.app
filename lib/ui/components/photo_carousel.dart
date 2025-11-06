@@ -4,6 +4,23 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+/// An image carousel widget that automatically cycles through images.
+/// 
+/// This widget displays a series of images in a swipeable carousel with:
+/// - Automatic image rotation at a configurable interval
+/// - Fade transitions between images
+/// - Page indicators showing which image is currently displayed
+/// - Support for both network images and asset images
+/// - Automatic aspect ratio detection
+/// 
+/// Example usage:
+/// ```dart
+/// PhotoCarousel(
+///   imageUrls: ['https://example.com/image1.jpg', 'assets/image2.png'],
+///   interval: Duration(seconds: 5),
+///   aspectRatio: 16 / 9,
+/// )
+/// ```
 class PhotoCarousel extends StatefulWidget {
   const PhotoCarousel({
     super.key,
@@ -14,10 +31,15 @@ class PhotoCarousel extends StatefulWidget {
     this.isDark = false,
   });
 
+  /// List of image URLs (network URLs or asset paths starting with 'assets/')
   final List<String> imageUrls;
+  /// Time between automatic image transitions (default: 3 seconds)
   final Duration interval;
+  /// Aspect ratio of the carousel container (default: 16/9)
   final double aspectRatio;
+  /// Border radius for rounded corners (default: 16)
   final double borderRadius;
+  /// Whether to use dark theme colors
   final bool isDark;
 
   @override
@@ -25,18 +47,23 @@ class PhotoCarousel extends StatefulWidget {
 }
 
 class _PhotoCarouselState extends State<PhotoCarousel> {
+  // Controller for managing page transitions
   late final PageController _pageController;
+  // Timer for automatic image rotation
   Timer? _autoPlayTimer;
+  // Current image index being displayed
   int _currentIndex = 0;
+  // Stores aspect ratios for each image (calculated as images load)
   late List<double?> _imageAspectRatios;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    // Initialize aspect ratio list with null values (will be filled as images load)
     _imageAspectRatios = List<double?>.filled(widget.imageUrls.length, null);
-    _resolveAllAspectRatios();
-    _startAutoPlay();
+    _resolveAllAspectRatios(); // Start loading image dimensions
+    _startAutoPlay(); // Begin automatic rotation
   }
 
   @override
@@ -73,12 +100,15 @@ class _PhotoCarouselState extends State<PhotoCarousel> {
     super.dispose();
   }
 
+  /// Starts the automatic image rotation timer
+  /// Only starts if there's more than one image
   void _startAutoPlay() {
     if (widget.imageUrls.length <= 1) {
-      return;
+      return; // No need to auto-play with only one image
     }
 
-    _autoPlayTimer?.cancel();
+    _autoPlayTimer?.cancel(); // Cancel any existing timer
+    // Create a periodic timer that moves to the next page every interval
     _autoPlayTimer = Timer.periodic(widget.interval, (_) => _goToNextPage());
   }
 
@@ -87,18 +117,22 @@ class _PhotoCarouselState extends State<PhotoCarousel> {
     _startAutoPlay();
   }
 
+  /// Advances to the next image in the carousel
+  /// Wraps around to the first image after the last one
   void _goToNextPage() {
     if (!mounted || widget.imageUrls.length <= 1) {
-      return;
+      return; // Don't advance if widget is disposed or only one image
     }
 
+    // Calculate next page index with wraparound (0, 1, 2, ..., last, 0, ...)
     final nextPage = (_currentIndex + 1) % widget.imageUrls.length;
 
+    // Animate to next page if the controller is ready
     if (_pageController.hasClients) {
       _pageController.animateToPage(
         nextPage,
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 600), // Smooth transition
+        curve: Curves.easeInOut, // Easing animation
       );
     }
   }
@@ -109,36 +143,49 @@ class _PhotoCarouselState extends State<PhotoCarousel> {
     }
   }
 
+  /// Loads an image and calculates its aspect ratio (width / height)
+  /// This helps the carousel size itself appropriately
   void _resolveAspectRatio(int index, String url) {
+    // Choose the right image provider based on URL type
     final ImageProvider provider = url.startsWith('assets/')
-        ? AssetImage(url)
-        : NetworkImage(url);
+        ? AssetImage(url) // Local asset file
+        : NetworkImage(url); // Network URL
 
+    // Resolve the image to get its dimensions
     final ImageStream stream =
         provider.resolve(const ImageConfiguration());
     late final ImageStreamListener listener;
+    // Listen for when the image loads to get its dimensions
     listener = ImageStreamListener((ImageInfo info, bool _) {
+      // Calculate aspect ratio: width divided by height
       final ratio = info.image.width / info.image.height;
       if (mounted) {
         setState(() {
+          // Store the aspect ratio for this image
           if (index < _imageAspectRatios.length) {
             _imageAspectRatios[index] = ratio;
           }
         });
       }
-      stream.removeListener(listener);
+      stream.removeListener(listener); // Clean up listener
     }, onError: (Object _, StackTrace? __) {
+      // Handle errors gracefully (just remove listener, don't update ratio)
       stream.removeListener(listener);
     });
 
     stream.addListener(listener);
   }
 
+  /// Calculates the container aspect ratio based on loaded images
+  /// Uses the minimum aspect ratio to ensure all images fit properly
   double _containerAspectRatio() {
+    // Get all successfully loaded aspect ratios
     final resolved = _imageAspectRatios.whereType<double>().toList();
     if (resolved.isEmpty) {
+      // If no images loaded yet, use the default aspect ratio
       return widget.aspectRatio;
     }
+    // Use the minimum ratio so the container fits the narrowest image
     final double minRatio = resolved.reduce(math.min);
     return minRatio;
   }
@@ -175,6 +222,7 @@ class _PhotoCarouselState extends State<PhotoCarousel> {
                 );
               },
             ),
+            // Page indicator dots at the bottom showing current image
             Positioned(
               bottom: 12,
               left: 0,
@@ -182,17 +230,18 @@ class _PhotoCarouselState extends State<PhotoCarousel> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(widget.imageUrls.length, (index) {
-                  final isActive = index == _currentIndex;
+                  final isActive = index == _currentIndex; // Highlight current image
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     margin: const EdgeInsets.symmetric(horizontal: 3),
                     height: 6,
+                    // Active dot is wider (16px) than inactive dots (6px)
                     width: isActive ? 16 : 6,
                     decoration: BoxDecoration(
                       color: isActive
-                          ? Colors.white
-                          : Colors.white.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(999),
+                          ? Colors.white // Full opacity for active dot
+                          : Colors.white.withOpacity(0.5), // Semi-transparent for inactive
+                      borderRadius: BorderRadius.circular(999), // Fully rounded
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.2),
@@ -254,6 +303,8 @@ class _PhotoCarouselState extends State<PhotoCarousel> {
   }
 }
 
+/// A helper widget that fades images in/out as the carousel transitions
+/// Creates a smooth crossfade effect between images
 class _FadingImage extends StatelessWidget {
   const _FadingImage({
     required this.controller,
@@ -294,6 +345,8 @@ class _FadingImage extends StatelessWidget {
   }
 }
 
+/// A widget that displays network or asset images with loading and error states
+/// Shows a loading spinner while images load and a broken image icon on errors
 class _NetworkImageWithPlaceholder extends StatelessWidget {
   const _NetworkImageWithPlaceholder({required this.url, required this.isDark});
 

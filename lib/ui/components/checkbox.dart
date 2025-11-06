@@ -1,7 +1,19 @@
 import 'package:flutter/material.dart';
 import '../theme/shadcn_theme.dart';
 
-/// ShadCN-style Checkbox component
+/// A checkbox component styled like ShadCN UI.
+/// 
+/// Checkboxes allow users to select one or more options. Supports labels,
+/// helper text, error messages, and multiple sizes.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadCheckbox(
+///   value: isChecked,
+///   onChanged: (value) => setState(() => isChecked = value ?? false),
+///   label: 'I agree to the terms',
+/// )
+/// ```
 class ShadCheckbox extends StatefulWidget {
   final bool value;
   final ValueChanged<bool?>? onChanged;
@@ -125,7 +137,23 @@ enum ShadCheckboxSize {
   lg,
 }
 
-/// ShadCN-style Checkbox Group component
+/// A group of checkboxes that allows multiple selections.
+/// 
+/// This widget manages a list of checkboxes and tracks which ones are selected.
+/// Supports horizontal and vertical layouts.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadCheckboxGroup(
+///   label: 'Select your interests',
+///   options: [
+///     ShadCheckboxOption(value: 'sports', label: 'Sports'),
+///     ShadCheckboxOption(value: 'music', label: 'Music'),
+///   ],
+///   selectedValues: selectedInterests,
+///   onChanged: (values) => setState(() => selectedInterests = values),
+/// )
+/// ```
 class ShadCheckboxGroup extends StatefulWidget {
   final List<ShadCheckboxOption> options;
   final List<String> selectedValues;
@@ -237,8 +265,13 @@ class _ShadCheckboxGroupState extends State<ShadCheckboxGroup> {
   }
 }
 
+/// Represents an option in a ShadCheckboxGroup.
+/// 
+/// Each option has a value and a label.
 class ShadCheckboxOption {
+  /// The value of the option (used to track selection)
   final String value;
+  /// The text displayed next to the checkbox
   final String label;
 
   const ShadCheckboxOption({

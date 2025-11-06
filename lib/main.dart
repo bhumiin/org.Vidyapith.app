@@ -1,3 +1,5 @@
+// Import statements - These bring in all the tools and components we need
+// to build the app, like buttons, screens, web views, and theme styling
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -21,25 +23,45 @@ import 'ui/screens/calendar_screen.dart';
 import 'ui/screens/contact_screen.dart';
 import 'services/daily_refresh.dart';
 
+/// Main entry point of the application
+/// This is the first function that runs when the app starts
+/// It tells Flutter to start running the VidyapithApp
 void main() {
   runApp(const VidyapithApp());
 }
 
+/// Root application widget
+/// This sets up the entire app with its theme (light/dark mode) and
+/// determines which screen to show first (MainScreen)
+/// 
+/// Features:
+/// - App name: "Vidyapith"
+/// - Automatic theme switching based on device settings (light/dark mode)
+/// - Custom theme colors for both light and dark modes
 class VidyapithApp extends StatelessWidget {
   const VidyapithApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Vidyapith',
-      theme: ShadCNTheme.lightTheme,
-      darkTheme: ShadCNTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      home: const MainScreen(),
+      title: 'Vidyapith', // This is the app name shown in the app switcher
+      theme: ShadCNTheme.lightTheme, // Light mode colors and styling
+      darkTheme: ShadCNTheme.darkTheme, // Dark mode colors and styling
+      themeMode: ThemeMode.system, // Automatically follows device theme setting
+      home: const MainScreen(), // The first screen users see when app opens
     );
   }
 }
 
+/// Main navigation screen with bottom tab bar
+/// This is the central hub of the app that manages all 5 tabs:
+/// Home, About, Events, Calendar, and Contact
+/// 
+/// Key Features:
+/// - Bottom navigation bar with 5 tabs
+/// - Each tab remembers its scroll position
+/// - Automatic scroll-to-top when switching tabs
+/// - Home tab refresh when tapping Home while already on Home
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -48,16 +70,25 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  // Tracks which tab is currently selected (0 = Home, 1 = About, etc.)
   int _currentIndex = 0;
+  
+  // This notifier tells the Home screen to refresh its content
+  // We use an integer that increments each time, so the Home screen
+  // always knows when to reload even if tapped multiple times
   final ValueNotifier<int> _homeRefreshNotifier = ValueNotifier<int>(0);
   
-  // Notifiers to trigger scroll-to-top for each tab
+  // These notifiers tell each screen to scroll back to the top
+  // When a user taps a tab, we toggle the value (true/false) to trigger
+  // the scroll-to-top action on that specific screen
   final ValueNotifier<bool> _homeScrollNotifier = ValueNotifier<bool>(false);
   final ValueNotifier<bool> _aboutScrollNotifier = ValueNotifier<bool>(false);
   final ValueNotifier<bool> _eventsScrollNotifier = ValueNotifier<bool>(false);
   final ValueNotifier<bool> _calendarScrollNotifier = ValueNotifier<bool>(false);
   final ValueNotifier<bool> _contactScrollNotifier = ValueNotifier<bool>(false);
 
+  // List of all tabs in the app with their names and website URLs
+  // This configuration makes it easy to add or modify tabs in the future
   final List<Map<String, String>> _tabs = [
     {'title': 'Home', 'url': 'https://www.vidyapith.org'},
     {'title': 'About', 'url': 'https://www.vidyapith.org/about'},
@@ -70,13 +101,20 @@ class _MainScreenState extends State<MainScreen> {
     {'title': 'Contact', 'url': 'https://www.vidyapith.org/contact'},
   ];
 
+  /// This runs once when the screen is first created
+  /// It checks if the contact information needs to be refreshed
+  /// (for example, if it's been more than 24 hours since last update)
   @override
   void initState() {
     super.initState();
-    // Trigger daily refresh check in background (non-blocking)
+    // Check if contact data needs refreshing in the background
+    // This doesn't block the app from loading - it happens quietly
     DailyRefreshService.refreshContactIfNeeded();
   }
 
+  /// Cleanup function - runs when the screen is removed from memory
+  /// This prevents memory leaks by properly disposing of all notifiers
+  /// Think of it like turning off all the lights before leaving a room
   @override
   void dispose() {
     _homeRefreshNotifier.dispose();
@@ -88,44 +126,58 @@ class _MainScreenState extends State<MainScreen> {
     super.dispose();
   }
 
+  /// Builds the main screen layout with navigation
+  /// This creates the visual structure: bottom navigation bar and content area
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // IndexedStack keeps all 5 tab screens in memory at once
+      // This means when you switch tabs, the content is already loaded
+      // and scroll position is preserved. Only the visible tab is shown.
       body: IndexedStack(
-        index: _currentIndex,
+        index: _currentIndex, // Shows the tab at this index (0-4)
         children: _tabs.asMap().entries.map((entry) {
-          final index = entry.key;
-          final tab = entry.value;
+          final index = entry.key; // Which tab number (0, 1, 2, 3, or 4)
+          final tab = entry.value; // The tab's title and URL
 
-          // Use HomeScreen for the first tab (Home)
+          // Each tab gets its own custom screen widget
+          // We pass the scroll notifier so the screen can listen for scroll-to-top commands
+          
+          // Tab 0: Home - Special because it has refresh capability
           if (index == 0) {
             return HomeScreen(
-              refreshNotifier: _homeRefreshNotifier,
-              scrollNotifier: _homeScrollNotifier,
+              refreshNotifier: _homeRefreshNotifier, // Allows refreshing Home tab
+              scrollNotifier: _homeScrollNotifier, // Allows scrolling Home to top
             );
           }
 
+          // Tab 1: About - Shows information about Vidyapith
           if (index == 1) {
             return AboutScreen(scrollNotifier: _aboutScrollNotifier);
           }
 
+          // Tab 2: Events - Shows upcoming events
           if (index == 2) {
             return EventsScreen(scrollNotifier: _eventsScrollNotifier);
           }
 
+          // Tab 3: Calendar - Shows the calendar PDF
           if (index == 3) {
             return CalendarScreen(scrollNotifier: _calendarScrollNotifier);
           }
 
+          // Tab 4: Contact - Shows contact information
           if (index == 4) {
             return ContactScreen(scrollNotifier: _contactScrollNotifier);
           }
 
+          // Fallback: If somehow we have more tabs, use a generic WebView
           return WebViewTab(url: tab['url']!, title: tab['title']!);
         }).toList(),
       ),
+      // Bottom navigation bar - The 5 tabs users can tap at the bottom of the screen
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
+        selectedIndex: _currentIndex, // Highlights which tab is currently active
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
           NavigationDestination(icon: Icon(Icons.info_outline), label: 'About'),
@@ -142,15 +194,21 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Contact',
           ),
         ],
+        // This function runs every time a user taps a tab
         onDestinationSelected: (index) {
+          // Special behavior: If user taps Home while already on Home, refresh the content
+          // This is useful for checking if there are new updates
           if (index == 0 && _currentIndex == 0) {
-            // If Home is already selected, refresh it
+            // Increment the refresh counter to trigger a refresh
             _homeRefreshNotifier.value = _homeRefreshNotifier.value + 1;
           }
           
+          // Switch to the selected tab by updating the current index
           setState(() => _currentIndex = index);
           
-          // Scroll to top for the selected tab
+          // Scroll to top for whichever tab was selected
+          // We toggle the value (true becomes false, false becomes true) to trigger
+          // the scroll action, even if the user is already at the top
           switch (index) {
             case 0:
               _homeScrollNotifier.value = !_homeScrollNotifier.value;
@@ -174,9 +232,18 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
+/// WebView Tab - Displays web content inside the app
+/// This widget shows website pages or PDFs directly in the app
+/// instead of opening an external browser
+/// 
+/// Features:
+/// - Loads web pages and PDFs
+/// - Pull-to-refresh to reload content
+/// - Detects when device is offline
+/// - Works differently on mobile vs web platforms
 class WebViewTab extends StatefulWidget {
-  final String url;
-  final String title;
+  final String url; // The web address to load (e.g., "https://www.vidyapith.org")
+  final String title; // The title of the page
 
   const WebViewTab({required this.url, required this.title, super.key});
 
@@ -185,50 +252,70 @@ class WebViewTab extends StatefulWidget {
 }
 
 class _WebViewTabState extends State<WebViewTab> {
+  // Controller that manages the web page loading and navigation
   late final WebViewController _controller;
+  
+  // Controller for pull-to-refresh functionality
+  // Users can pull down on the screen to reload the page
   final RefreshController _refreshController = RefreshController(
-    initialRefresh: false,
+    initialRefresh: false, // Don't refresh automatically when page loads
   );
+  
+  // Tracks whether the device has internet connection
   bool _isOffline = false;
 
+  /// Initializes the WebView when the screen is first created
+  /// Sets up the web page loading and connectivity monitoring
   @override
   void initState() {
     super.initState();
 
-    // Only initialize WebView controller for non-web platforms
+    // WebView only works on mobile devices (iOS/Android), not on web browsers
+    // So we only set it up if we're not running on the web platform
     if (!kIsWeb) {
+      // Configure the WebView to load web pages
       _controller = WebViewController()
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setJavaScriptMode(JavaScriptMode.unrestricted) // Allow JavaScript to run
         ..setNavigationDelegate(
           NavigationDelegate(
+            // Called when a page starts loading
             onPageStarted: (String url) {
               print('Page started loading: $url');
             },
+            // Called when a page finishes loading
             onPageFinished: (String url) {
               print('Page finished loading: $url');
             },
+            // Called if there's an error loading the page
             onWebResourceError: (WebResourceError error) {
               print('WebView error: ${error.description}');
             },
           ),
         )
-        ..loadRequest(Uri.parse(widget.url));
+        ..loadRequest(Uri.parse(widget.url)); // Actually load the URL
     }
 
+    // Listen for changes in internet connectivity
+    // If the device goes offline, we'll show an offline message
     Connectivity().onConnectivityChanged.listen((result) {
       setState(() => _isOffline = result.contains(ConnectivityResult.none));
     });
   }
 
+  /// Called when user pulls down to refresh the page
+  /// Reloads the web page content
   void _onRefresh() async {
     if (!kIsWeb) {
-      await _controller.reload();
+      await _controller.reload(); // Reload the current page
     }
-    _refreshController.refreshCompleted();
+    _refreshController.refreshCompleted(); // Tell the refresh indicator we're done
   }
 
+  /// Builds the WebView display
+  /// Shows different content based on connectivity and platform
   @override
   Widget build(BuildContext context) {
+    // First check: If device is offline, show a message instead of trying to load
     if (_isOffline) {
       return const Center(
         child: Text(
@@ -238,24 +325,29 @@ class _WebViewTabState extends State<WebViewTab> {
       );
     }
 
-    // Use iframe for web platform, WebView for mobile
+    // Second check: If running on web platform, show a placeholder
+    // (WebView doesn't work in web browsers, so we show this instead)
     if (kIsWeb) {
       return _buildWebView();
     }
 
+    // On mobile devices: Show the actual WebView with pull-to-refresh
     return SmartRefresher(
       controller: _refreshController,
-      onRefresh: _onRefresh,
+      onRefresh: _onRefresh, // What to do when user pulls down to refresh
       child: Container(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height,
-          maxWidth: MediaQuery.of(context).size.width,
+          maxHeight: MediaQuery.of(context).size.height, // Use full screen height
+          maxWidth: MediaQuery.of(context).size.width, // Use full screen width
         ),
-        child: WebViewWidget(controller: _controller),
+        child: WebViewWidget(controller: _controller), // The actual web page display
       ),
     );
   }
 
+  /// Placeholder view for web platform
+  /// Since WebView doesn't work in web browsers, this shows a simple message
+  /// with the URL that would be loaded
   Widget _buildWebView() {
     return Container(
       width: double.infinity,
@@ -288,368 +380,6 @@ class _WebViewTabState extends State<WebViewTab> {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// ShadCN UI Demo Screen
-class ShadCNDemoScreen extends StatefulWidget {
-  const ShadCNDemoScreen({super.key});
-
-  @override
-  State<ShadCNDemoScreen> createState() => _ShadCNDemoScreenState();
-}
-
-class _ShadCNDemoScreenState extends State<ShadCNDemoScreen> {
-  final TextEditingController _inputController = TextEditingController();
-  final TextEditingController _textareaController = TextEditingController();
-  String? _selectedValue;
-  List<String> _selectedCheckboxes = [];
-  String? _selectedRadio;
-  bool _isLoading = false;
-
-  @override
-  void dispose() {
-    _inputController.dispose();
-    _textareaController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('ShadCN UI Components'),
-        actions: [
-          IconButton(
-            onPressed: () {
-              final brightness = Theme.of(context).brightness;
-              // Toggle theme logic would go here
-            },
-            icon: Icon(
-              Theme.of(context).brightness == Brightness.dark
-                  ? Icons.light_mode
-                  : Icons.dark_mode,
-            ),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(ShadCNTheme.space4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Buttons Section
-            ShadSection(
-              title: 'Buttons',
-              description: 'Various button styles and sizes',
-              child: Column(
-                children: [
-                  ShadFlex(
-                    direction: Axis.horizontal,
-                    spacing: ShadCNTheme.space2,
-                    children: [
-                      ShadButton(
-                        text: 'Default',
-                        onPressed: () => _showToast('Default button pressed!'),
-                      ),
-                      ShadButton(
-                        text: 'Secondary',
-                        variant: ShadButtonVariant.secondary,
-                        onPressed: () =>
-                            _showToast('Secondary button pressed!'),
-                      ),
-                      ShadButton(
-                        text: 'Destructive',
-                        variant: ShadButtonVariant.destructive,
-                        onPressed: () =>
-                            _showToast('Destructive button pressed!'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: ShadCNTheme.space4),
-                  ShadFlex(
-                    direction: Axis.horizontal,
-                    spacing: ShadCNTheme.space2,
-                    children: [
-                      ShadButton(
-                        text: 'Outline',
-                        variant: ShadButtonVariant.outline,
-                        onPressed: () => _showToast('Outline button pressed!'),
-                      ),
-                      ShadButton(
-                        text: 'Ghost',
-                        variant: ShadButtonVariant.ghost,
-                        onPressed: () => _showToast('Ghost button pressed!'),
-                      ),
-                      ShadButton(
-                        text: 'Link',
-                        variant: ShadButtonVariant.link,
-                        onPressed: () => _showToast('Link button pressed!'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: ShadCNTheme.space4),
-                  ShadFlex(
-                    direction: Axis.horizontal,
-                    spacing: ShadCNTheme.space2,
-                    children: [
-                      ShadButton(
-                        text: 'Small',
-                        size: ShadButtonSize.sm,
-                        onPressed: () => _showToast('Small button pressed!'),
-                      ),
-                      ShadButton(
-                        text: 'Large',
-                        size: ShadButtonSize.lg,
-                        onPressed: () => _showToast('Large button pressed!'),
-                      ),
-                      ShadButton(
-                        text: 'Loading',
-                        isLoading: _isLoading,
-                        onPressed: () {
-                          setState(() => _isLoading = true);
-                          Future.delayed(const Duration(seconds: 2), () {
-                            setState(() => _isLoading = false);
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: ShadCNTheme.space8),
-
-            // Cards Section
-            ShadSection(
-              title: 'Cards',
-              description: 'Card components with different layouts',
-              child: Column(
-                children: [
-                  ShadCardComplete(
-                    title: 'Card with Title',
-                    description: 'This is a card with a title and description.',
-                    content: const Text('Card content goes here.'),
-                    footer: ShadButton(
-                      text: 'Action',
-                      size: ShadButtonSize.sm,
-                      onPressed: () => _showToast('Card action pressed!'),
-                    ),
-                  ),
-                  const SizedBox(height: ShadCNTheme.space4),
-                  ShadCard(
-                    child: Column(
-                      children: [
-                        const Text('Simple Card'),
-                        const SizedBox(height: ShadCNTheme.space2),
-                        ShadBadge(
-                          text: 'Badge',
-                          variant: ShadBadgeVariant.secondary,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: ShadCNTheme.space8),
-
-            // Form Components Section
-            ShadSection(
-              title: 'Form Components',
-              description: 'Input fields, selects, and form controls',
-              child: Column(
-                children: [
-                  ShadInput(
-                    label: 'Email',
-                    placeholder: 'Enter your email',
-                    controller: _inputController,
-                    keyboardType: TextInputType.emailAddress,
-                    prefixIcon: const Icon(Icons.email_outlined),
-                  ),
-                  const SizedBox(height: ShadCNTheme.space4),
-                  ShadTextarea(
-                    label: 'Message',
-                    placeholder: 'Enter your message',
-                    controller: _textareaController,
-                    minLines: 3,
-                    maxLines: 5,
-                  ),
-                  const SizedBox(height: ShadCNTheme.space4),
-                  ShadSelect<String>(
-                    label: 'Country',
-                    placeholder: 'Select a country',
-                    value: _selectedValue,
-                    onChanged: (value) =>
-                        setState(() => _selectedValue = value),
-                    options: const [
-                      ShadSelectOption(value: 'us', label: 'United States'),
-                      ShadSelectOption(value: 'uk', label: 'United Kingdom'),
-                      ShadSelectOption(value: 'ca', label: 'Canada'),
-                      ShadSelectOption(value: 'au', label: 'Australia'),
-                    ],
-                  ),
-                  const SizedBox(height: ShadCNTheme.space4),
-                  ShadCheckboxGroup(
-                    label: 'Interests',
-                    selectedValues: _selectedCheckboxes,
-                    onChanged: (values) =>
-                        setState(() => _selectedCheckboxes = values),
-                    options: const [
-                      ShadCheckboxOption(value: 'sports', label: 'Sports'),
-                      ShadCheckboxOption(value: 'music', label: 'Music'),
-                      ShadCheckboxOption(value: 'travel', label: 'Travel'),
-                    ],
-                  ),
-                  const SizedBox(height: ShadCNTheme.space4),
-                  ShadRadioGroup<String>(
-                    label: 'Gender',
-                    value: _selectedRadio,
-                    onChanged: (value) =>
-                        setState(() => _selectedRadio = value),
-                    options: const [
-                      ShadRadioOption(value: 'male', label: 'Male'),
-                      ShadRadioOption(value: 'female', label: 'Female'),
-                      ShadRadioOption(value: 'other', label: 'Other'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: ShadCNTheme.space8),
-
-            // Alerts Section
-            ShadSection(
-              title: 'Alerts',
-              description: 'Alert components for notifications',
-              child: Column(
-                children: [
-                  ShadAlert(
-                    title: 'Default Alert',
-                    description: 'This is a default alert message.',
-                  ),
-                  const SizedBox(height: ShadCNTheme.space4),
-                  ShadAlert(
-                    title: 'Success Alert',
-                    description: 'Operation completed successfully!',
-                    variant: ShadAlertVariant.success,
-                  ),
-                  const SizedBox(height: ShadCNTheme.space4),
-                  ShadAlert(
-                    title: 'Warning Alert',
-                    description: 'Please check your input.',
-                    variant: ShadAlertVariant.warning,
-                  ),
-                  const SizedBox(height: ShadCNTheme.space4),
-                  ShadAlert(
-                    title: 'Error Alert',
-                    description: 'Something went wrong.',
-                    variant: ShadAlertVariant.destructive,
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: ShadCNTheme.space8),
-
-            // Badges Section
-            ShadSection(
-              title: 'Badges',
-              description: 'Badge components for labels and status',
-              child: ShadFlex(
-                direction: Axis.horizontal,
-                spacing: ShadCNTheme.space2,
-                children: const [
-                  ShadBadge(text: 'Default'),
-                  ShadBadge(
-                    text: 'Secondary',
-                    variant: ShadBadgeVariant.secondary,
-                  ),
-                  ShadBadge(
-                    text: 'Destructive',
-                    variant: ShadBadgeVariant.destructive,
-                  ),
-                  ShadBadge(text: 'Outline', variant: ShadBadgeVariant.outline),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: ShadCNTheme.space8),
-
-            // Dialog Demo
-            ShadSection(
-              title: 'Dialogs',
-              description: 'Modal dialogs and confirmations',
-              child: ShadFlex(
-                direction: Axis.horizontal,
-                spacing: ShadCNTheme.space2,
-                children: [
-                  ShadButton(
-                    text: 'Show Dialog',
-                    onPressed: () => _showDialog(),
-                  ),
-                  ShadButton(
-                    text: 'Show Alert',
-                    variant: ShadButtonVariant.outline,
-                    onPressed: () => _showAlertDialog(),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: ShadCNTheme.space8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showToast(String message) {
-    ShadToastService.show(
-      context,
-      title: message,
-      variant: ShadAlertVariant.success,
-    );
-  }
-
-  void _showDialog() {
-    ShadDialogService.showDialog(
-      context: context,
-      title: 'Dialog Title',
-      description: 'This is a dialog description.',
-      content: const Text('Dialog content goes here.'),
-      actions: [
-        ShadButton(
-          text: 'Cancel',
-          variant: ShadButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        ShadButton(
-          text: 'Confirm',
-          onPressed: () {
-            Navigator.of(context).pop();
-            _showToast('Dialog confirmed!');
-          },
-        ),
-      ],
-    );
-  }
-
-  void _showAlertDialog() {
-    ShadDialogService.showAlertDialog(
-      context: context,
-      title: 'Confirm Action',
-      description: 'Are you sure you want to proceed?',
-      confirmText: 'Yes, proceed',
-      cancelText: 'Cancel',
-      onConfirm: () {
-        Navigator.of(context).pop();
-        _showToast('Action confirmed!');
-      },
     );
   }
 }

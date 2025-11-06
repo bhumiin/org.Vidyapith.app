@@ -8,7 +8,25 @@ import '../../models/calendar_event.dart';
 import '../../services/calendar_scraper.dart';
 import '../components/logo_leading.dart';
 
+/// Calendar Screen - This screen displays a monthly calendar view with all Vidyapith events.
+/// 
+/// What this screen does:
+/// - Shows a calendar widget where users can see all events for any month
+/// - Displays a list of events below the calendar with dates, titles, and descriptions
+/// - Highlights Vidyapith-specific events with special red coloring
+/// - Allows users to navigate between months using arrow buttons
+/// - When users tap a date on the calendar, it automatically scrolls to that event in the list
+/// - Fetches event data from the Vidyapith website automatically
+/// 
+/// How users interact with it:
+/// - Tap dates on the calendar to jump to events on that date
+/// - Swipe or use arrow buttons to change months
+/// - Pull down to refresh and get the latest events from the website
+/// - Scroll through the events list to see all upcoming activities
+/// - Tap the notification icon (currently not functional) for future notification features
 class CalendarScreen extends StatefulWidget {
+  /// Allows other parts of the app to request that this screen scroll to the top.
+  /// Used when the user switches to the Calendar tab.
   final ValueNotifier<bool>? scrollNotifier;
 
   const CalendarScreen({super.key, this.scrollNotifier});
@@ -17,16 +35,38 @@ class CalendarScreen extends StatefulWidget {
   State<CalendarScreen> createState() => _CalendarScreenState();
 }
 
+/// Internal state class that manages the calendar screen's behavior and display.
 class _CalendarScreenState extends State<CalendarScreen> {
+  /// Service that fetches calendar events from the Vidyapith website.
+  /// It scrapes the website to get event dates, titles, and descriptions.
   final CalendarScraper _scraper = CalendarScraper();
+  
+  /// Controller that manages scrolling on the page.
+  /// Allows the screen to automatically scroll to specific events when dates are tapped.
   final ScrollController _scrollController = ScrollController();
+  
+  /// Map that stores references to each event card in the list.
+  /// Used to scroll to specific events when their dates are tapped on the calendar.
   final Map<String, GlobalKey> _eventKeys = {};
 
+  /// The calendar data that was fetched from the website (all events, dates, etc.).
+  /// This is null until content is loaded.
   CalendarContent? _calendarContent;
+  
+  /// Tracks whether we're currently loading calendar events from the website.
+  /// Shows a loading spinner while true.
   bool _isLoading = true;
+  
+  /// Stores any error message if loading events fails.
+  /// Displayed to the user if something goes wrong (network error, etc.).
   String? _errorMessage;
+  
+  /// The month and year currently displayed on the calendar widget.
+  /// Users can change this by navigating to different months.
   DateTime _displayedMonth = DateTime.now();
 
+  /// Called when the screen is first created and displayed.
+  /// Sets up listeners and loads initial calendar events from the website.
   @override
   void initState() {
     super.initState();
@@ -34,6 +74,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
     widget.scrollNotifier?.addListener(_onScrollRequested);
   }
 
+  /// Called when the screen is removed or closed.
+  /// Cleans up resources like controllers and listeners to prevent memory leaks.
   @override
   void dispose() {
     widget.scrollNotifier?.removeListener(_onScrollRequested);
@@ -42,10 +84,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
     super.dispose();
   }
 
+  /// Called when another part of the app requests that this screen scroll to the top.
+  /// Triggers the scrollToTop() method.
   void _onScrollRequested() {
     scrollToTop();
   }
 
+  /// Smoothly scrolls the page back to the very top.
+  /// Used when the user switches to the Calendar tab or when requested from outside.
   void scrollToTop() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
@@ -56,33 +102,40 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
+  /// Loads calendar events from the Vidyapith website.
+  /// Fetches all events, their dates, titles, and descriptions.
+  /// 
+  /// Parameters:
+  /// - forceRefresh: If true, ignores cached data and fetches fresh content from the website
   Future<void> _loadContent({bool forceRefresh = false}) async {
     if (!mounted) return;
 
     if (forceRefresh || _calendarContent == null) {
       setState(() {
-        _isLoading = true;
+        _isLoading = true; // Show loading spinner
         if (forceRefresh) {
-          _errorMessage = null;
+          _errorMessage = null; // Clear any previous errors
         }
       });
     }
 
     try {
+      // Fetch calendar events from the website (may use cached version if available)
       final content = await _scraper.getCalendarContent(
         forceRefresh: forceRefresh,
       );
       if (!mounted) return;
       setState(() {
-        _calendarContent = content;
-        _isLoading = false;
-        _errorMessage = null;
+        _calendarContent = content; // Store the fetched events
+        _isLoading = false; // Hide loading spinner
+        _errorMessage = null; // Clear any errors
       });
     } catch (_) {
+      // If something goes wrong (network error, parsing error, etc.)
       if (!mounted) return;
       setState(() {
-        _isLoading = false;
-        _errorMessage = 'Unable to load calendar.';
+        _isLoading = false; // Hide loading spinner
+        _errorMessage = 'Unable to load calendar.'; // Show error message
       });
     }
   }
@@ -122,6 +175,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  /// Builds the header section at the top of the Calendar screen.
+  /// Displays the app logo, "Calendar" title, and a notification icon button.
   Widget _buildHeader(BuildContext context, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -179,6 +234,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  /// Shows a loading spinner while calendar events are being fetched from the website.
+  /// This appears when the screen first loads and there's no cached data available.
   Widget _buildLoadingState(bool isDark) {
     return Padding(
       padding: const EdgeInsets.all(ShadCNTheme.space8),
@@ -195,6 +252,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  /// Shows an error message if calendar events cannot be loaded.
+  /// This appears when there's a network error or the website cannot be accessed.
   Widget _buildErrorState(BuildContext context, bool isDark) {
     return Padding(
       padding: const EdgeInsets.all(ShadCNTheme.space4),
@@ -210,18 +269,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  /// Builds the main calendar content including the calendar widget and events list.
+  /// This method:
+  /// - Gets all events for the currently displayed month
+  /// - Sorts them by date (earliest first)
+  /// - Creates references to each event card so we can scroll to them when dates are tapped
   Widget _buildCalendarContent(BuildContext context, bool isDark) {
+    // Get all events for the currently displayed month and year
     final events = _calendarContent?.getEventsForMonth(
           _displayedMonth.month,
           _displayedMonth.year,
         ) ??
         [];
 
-    // Sort events by date
+    // Sort events by date (earliest first, so January 1st comes before January 15th)
     final sortedEvents = List<CalendarEvent>.from(events)
       ..sort((a, b) => a.date.compareTo(b.date));
 
-    // Clear and rebuild event keys
+    // Clear and rebuild event keys - these are references to each event card
+    // Used to scroll to specific events when their dates are tapped on the calendar
     _eventKeys.clear();
     for (final event in sortedEvents) {
       final key = '${event.date.year}-${event.date.month}-${event.date.day}-${event.title}';
@@ -248,27 +314,33 @@ class _CalendarScreenState extends State<CalendarScreen> {
               displayedMonth: _displayedMonth,
               events: events,
               onDateTapped: (date) {
-                // Find first event for this date and scroll to it
+                // When user taps a date on the calendar, find all events for that date
+                // and scroll to the first one in the events list
                 final dateEvents = sortedEvents.where((e) =>
                     e.date.year == date.year &&
                     e.date.month == date.month &&
                     e.date.day == date.day).toList();
                 
                 if (dateEvents.isNotEmpty) {
+                  // Get the first event for this date
                   final firstEvent = dateEvents.first;
+                  // Find the reference to this event's card
                   final key = '${firstEvent.date.year}-${firstEvent.date.month}-${firstEvent.date.day}-${firstEvent.title}';
                   final eventKey = _eventKeys[key];
                   
+                  // Scroll to this event card with a smooth animation
                   if (eventKey?.currentContext != null) {
                     Scrollable.ensureVisible(
                       eventKey!.currentContext!,
-                      duration: const Duration(milliseconds: 500),
-                      curve: Curves.easeInOut,
+                      duration: const Duration(milliseconds: 500), // Half-second animation
+                      curve: Curves.easeInOut, // Smooth start and end
                     );
                   }
                 }
               },
               onMonthChanged: (newMonth) {
+                // When user changes the month (using arrow buttons or swiping),
+                // update the displayed month to show events for the new month
                 setState(() {
                   _displayedMonth = newMonth;
                 });
@@ -282,6 +354,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  /// Builds the list of events displayed below the calendar.
+  /// Each event is shown as a card with the date badge on the left and event details on the right.
+  /// Vidyapith-specific events are highlighted with red coloring.
   Widget _buildEventsList(
     BuildContext context,
     bool isDark,
@@ -329,13 +404,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  /// Builds a single event card showing date, title, and description.
+  /// Vidyapith events are highlighted with red coloring and a special "Vidyapith" badge.
+  /// Events with Indian calendar dates show an asterisk (*) badge.
   Widget _buildEventCard(
     BuildContext context,
     bool isDark,
     CalendarEvent event,
   ) {
+    // Get the month name (e.g., "January", "February") from the month number
     final monthName = _getMonthName(event.date.month);
+    // Get the day number (e.g., 1, 15, 31)
     final day = event.date.day;
+    // Check if this is a Vidyapith-specific event (shown in red instead of blue)
     final isVidyapithEvent = event.isVidyapithEvent;
 
     return ShadCard(
@@ -480,6 +561,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  /// Converts a month number (1-12) to its full name (e.g., 1 → "January", 12 → "December").
+  /// Used to display the month abbreviation (e.g., "JAN", "FEB") on event date badges.
   String _getMonthName(int month) {
     const months = [
       'January',

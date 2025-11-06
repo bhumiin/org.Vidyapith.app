@@ -1,7 +1,19 @@
 import 'package:flutter/material.dart';
 import '../theme/shadcn_theme.dart';
 
-/// ShadCN-style Card component
+/// A card component styled like ShadCN UI.
+/// 
+/// Cards are used to group related content. They have rounded corners,
+/// borders, shadows, and support optional tap actions.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadCard(
+///   child: Text('Card content'),
+///   padding: EdgeInsets.all(16),
+///   onTap: () => navigateToDetails(),
+/// )
+/// ```
 class ShadCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -49,7 +61,9 @@ class ShadCard extends StatelessWidget {
   }
 }
 
-/// ShadCN-style Card Header component
+/// A header section for cards, typically containing the title.
+/// 
+/// Provides consistent padding and spacing for card headers.
 class ShadCardHeader extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -74,7 +88,9 @@ class ShadCardHeader extends StatelessWidget {
   }
 }
 
-/// ShadCN-style Card Title component
+/// A title widget for cards with consistent styling.
+/// 
+/// Automatically adapts to light/dark themes.
 class ShadCardTitle extends StatelessWidget {
   final String text;
   final TextStyle? style;
@@ -100,7 +116,9 @@ class ShadCardTitle extends StatelessWidget {
   }
 }
 
-/// ShadCN-style Card Description component
+/// A description/subtitle widget for cards with muted text styling.
+/// 
+/// Typically used below the card title for additional context.
 class ShadCardDescription extends StatelessWidget {
   final String text;
   final TextStyle? style;
@@ -125,7 +143,9 @@ class ShadCardDescription extends StatelessWidget {
   }
 }
 
-/// ShadCN-style Card Content component
+/// The main content area of a card.
+/// 
+/// Provides consistent padding for card body content.
 class ShadCardContent extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -148,7 +168,9 @@ class ShadCardContent extends StatelessWidget {
   }
 }
 
-/// ShadCN-style Card Footer component
+/// A footer section for cards, typically containing actions or additional info.
+/// 
+/// Provides consistent padding and spacing for card footers.
 class ShadCardFooter extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -173,7 +195,20 @@ class ShadCardFooter extends StatelessWidget {
   }
 }
 
-/// Complete ShadCN-style Card with all sections
+/// A complete card widget with all sections pre-configured.
+/// 
+/// This is a convenience widget that combines header, content, and footer
+/// into a single card. Perfect for consistent card layouts.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadCardComplete(
+///   title: 'Event Title',
+///   description: 'Event description',
+///   content: Text('Event details...'),
+///   footer: ShadButton(text: 'Register'),
+/// )
+/// ```
 class ShadCardComplete extends StatelessWidget {
   final String? title;
   final String? description;

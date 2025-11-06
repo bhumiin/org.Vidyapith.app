@@ -9,6 +9,24 @@ import '../components/button.dart';
 import '../components/card.dart';
 import '../theme/shadcn_theme.dart';
 
+/// Donate Screen - This screen provides all donation options and methods for supporting Vidyapith.
+/// 
+/// What this screen does:
+/// - Displays an introduction explaining how donations support Vidyapith
+/// - Shows multiple donation methods:
+///   - Zelle Transfer: With email address and QR code for easy scanning
+///   - Mail a Check: With mailing address displayed
+///   - PayPal Giving Fund: With link to donate online (no fees deducted)
+///   - Credit Card: With link to donate online (fees deducted)
+///   - Matching Grants: With link to matching donation form
+/// - Fetches all donation information from the Vidyapith website automatically
+/// 
+/// How users interact with it:
+/// - Scroll through all donation options
+/// - Tap "Copy" button to copy Zelle email address to clipboard
+/// - Scan QR code for Zelle donations (if available)
+/// - Tap "Open Link" buttons to open donation pages in a browser
+/// - Pull down to refresh and get the latest donation information
 class DonateScreen extends StatefulWidget {
   const DonateScreen({super.key});
 
@@ -220,6 +238,11 @@ class _DonateScreenState extends State<DonateScreen> {
     );
   }
 
+  /// Builds the Zelle transfer donation section.
+  /// Shows:
+  /// - Instructions for using Zelle
+  /// - The Zelle email address in a copyable box with a "Copy" button
+  /// - A QR code image (if available) that users can scan with their phone's Zelle app
   Widget _buildZelleSection(BuildContext context, DonateContent content) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -383,6 +406,10 @@ class _DonateScreenState extends State<DonateScreen> {
     );
   }
 
+  /// Builds the check donation section.
+  /// Shows:
+  /// - Instructions for mailing a check
+  /// - The mailing address in a formatted box (Vidyapith name and address)
   Widget _buildCheckSection(BuildContext context, DonateContent content) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -501,6 +528,12 @@ class _DonateScreenState extends State<DonateScreen> {
     );
   }
 
+  /// Builds a card for online donation methods (PayPal, Credit Card, Matching Grants).
+  /// Each method shows:
+  /// - An icon and title
+  /// - Instructions on how to donate
+  /// - Optional notes or warnings
+  /// - A button to open the donation link in a browser
   Widget _buildOnlineMethodCard(
     BuildContext context, {
     required String title,
@@ -680,6 +713,9 @@ class _DonateScreenState extends State<DonateScreen> {
     );
   }
 
+  /// Copies the Zelle email address to the user's clipboard.
+  /// This is called when the user taps the "Copy" button next to the email address.
+  /// Shows a confirmation message that the email was copied.
   Future<void> _copyToClipboard(String value) async {
     await Clipboard.setData(ClipboardData(text: value));
     if (!mounted) return;

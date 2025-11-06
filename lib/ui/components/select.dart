@@ -1,7 +1,24 @@
 import 'package:flutter/material.dart';
 import '../theme/shadcn_theme.dart';
 
-/// ShadCN-style Select component
+/// A dropdown select component styled like ShadCN UI.
+/// 
+/// This component displays a list of options in a dialog when tapped.
+/// Supports labels, placeholders, helper text, error messages, and icons.
+/// 
+/// Example usage:
+/// ```dart
+/// ShadSelect<String>(
+///   label: 'Choose a color',
+///   placeholder: 'Select...',
+///   options: [
+///     ShadSelectOption(value: 'red', label: 'Red'),
+///     ShadSelectOption(value: 'blue', label: 'Blue'),
+///   ],
+///   value: selectedColor,
+///   onChanged: (value) => setState(() => selectedColor = value),
+/// )
+/// ```
 class ShadSelect<T> extends StatefulWidget {
   final List<ShadSelectOption<T>> options;
   final T? value;
@@ -144,6 +161,7 @@ class _ShadSelectState<T> extends State<ShadSelect<T>> {
     );
   }
 
+  /// Shows a dialog with all select options when the select field is tapped
   void _showSelectDialog() {
     showDialog(
       context: context,
@@ -231,8 +249,21 @@ class _SelectDialog<T> extends StatelessWidget {
   }
 }
 
+/// Represents an option in a ShadSelect dropdown.
+/// 
+/// Each option has a value (the actual data) and a label (what's displayed).
+/// 
+/// Example:
+/// ```dart
+/// ShadSelectOption<String>(
+///   value: 'en',
+///   label: 'English',
+/// )
+/// ```
 class ShadSelectOption<T> {
+  /// The actual value of the option (returned when selected)
   final T value;
+  /// The text displayed to the user
   final String label;
 
   const ShadSelectOption({
