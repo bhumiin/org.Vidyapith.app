@@ -7,6 +7,7 @@ import '../components/button.dart';
 import '../components/card.dart';
 import '../theme/shadcn_theme.dart';
 import '../components/branded_app_bar.dart';
+import '../components/copyright_widget.dart';
 
 /// Admissions Screen - This screen displays all admissions information and forms for Vidyapith.
 /// 
@@ -192,6 +193,8 @@ class _AdmissionsScreenState extends State<AdmissionsScreen> {
         if (content.addressLines.isNotEmpty) ...[
           _buildAddressCard(context, content.addressLines),
         ],
+        const SizedBox(height: ShadCNTheme.space4),
+        CopyrightWidget(),
       ],
     );
   }

@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../theme/shadcn_theme.dart';
 import '../components/card.dart';
 import '../components/photo_carousel.dart';
+import '../components/copyright_widget.dart';
 import '../../models/website_content.dart';
 import '../../services/website_scraper.dart';
 import 'bookstore_screen.dart';
@@ -197,6 +198,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildEventsSection(context, isDark),
                 // Quick links grid (Snack Signup, Classes, etc.)
                 _buildResourcesSection(context, isDark),
+                // Copyright text
+                CopyrightWidget(),
                 // Bottom spacing
                 const SizedBox(height: ShadCNTheme.space12),
               ],

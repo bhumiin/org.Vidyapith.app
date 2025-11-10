@@ -5,6 +5,7 @@ import '../components/branded_app_bar.dart';
 import '../components/button.dart';
 import '../components/card.dart';
 import '../theme/shadcn_theme.dart';
+import '../components/copyright_widget.dart';
 
 /// Snack Signup Screen - This screen helps parents sign up to provide snacks for Vidyapith events.
 /// 
@@ -243,6 +244,8 @@ class _SnackSignupScreenState extends State<SnackSignupScreen> {
           'Snack Coordinator will be calling you week in advance',
           isBold: true,
         ),
+        const SizedBox(height: ShadCNTheme.space4),
+        CopyrightWidget(),
       ],
     );
   }

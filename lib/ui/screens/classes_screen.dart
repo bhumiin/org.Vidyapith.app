@@ -4,6 +4,7 @@ import '../components/card.dart';
 import '../theme/shadcn_theme.dart';
 import 'class_detail_screen.dart';
 import '../components/branded_app_bar.dart';
+import '../components/copyright_widget.dart';
 
 /// Classes Screen - This screen displays an overview of all class types offered at Vidyapith.
 /// 
@@ -89,6 +90,8 @@ class ClassesScreen extends StatelessWidget {
                 );
               },
             ),
+            const SizedBox(height: ShadCNTheme.space4),
+            CopyrightWidget(),
           ],
         ),
       ),

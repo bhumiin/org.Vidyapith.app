@@ -8,6 +8,7 @@ import '../../services/website_scraper.dart';
 import '../components/button.dart';
 import '../components/card.dart';
 import '../theme/shadcn_theme.dart';
+import '../components/copyright_widget.dart';
 
 /// Donate Screen - This screen provides all donation options and methods for supporting Vidyapith.
 /// 
@@ -198,6 +199,8 @@ class _DonateScreenState extends State<DonateScreen> {
           if (i != sections.length - 1)
             const SizedBox(height: ShadCNTheme.space4),
         ],
+        const SizedBox(height: ShadCNTheme.space4),
+        CopyrightWidget(),
       ],
     );
   }

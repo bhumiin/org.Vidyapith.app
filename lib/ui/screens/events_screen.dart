@@ -6,6 +6,7 @@ import '../components/card.dart';
 import '../../models/website_content.dart';
 import '../../services/website_scraper.dart';
 import '../components/logo_leading.dart';
+import '../components/copyright_widget.dart';
 
 /// Events Screen - This screen displays a list of special events from the Vidyapith website.
 /// 
@@ -135,6 +136,7 @@ class _EventsScreenState extends State<EventsScreen> {
               children: [
                 _buildHeader(context, isDark),
                 _buildEventsList(context, isDark),
+                CopyrightWidget(),
                 const SizedBox(height: ShadCNTheme.space12),
               ],
             ),

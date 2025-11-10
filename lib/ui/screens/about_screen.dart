@@ -6,6 +6,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../components/photo_carousel.dart';
 import '../theme/shadcn_theme.dart';
 import '../components/logo_leading.dart';
+import '../components/copyright_widget.dart';
 
 /// About Screen - This is the main screen that displays information about Vidyapith.
 /// It shows users:
@@ -155,6 +156,7 @@ class _AboutScreenState extends State<AboutScreen> {
                 _buildCarouselSection(isDark),        // Image carousel
                 _buildAboutSection(isDark),           // Mission statement text
                 _buildVideoSection(context, isDark),   // Video preview section
+                CopyrightWidget(),              // Copyright text
                 const SizedBox(height: ShadCNTheme.space12), // Bottom spacing
               ],
             ),

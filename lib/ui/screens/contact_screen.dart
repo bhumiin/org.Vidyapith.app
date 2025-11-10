@@ -9,6 +9,7 @@ import '../components/card.dart';
 import '../theme/shadcn_theme.dart';
 import 'admissions_screen.dart';
 import '../components/logo_leading.dart';
+import '../components/copyright_widget.dart';
 
 /// Contact Screen - This screen provides all contact information and ways to reach Vidyapith.
 /// 
@@ -294,6 +295,10 @@ class _ContactScreenState extends State<ContactScreen> {
       cards.add(const SizedBox(height: ShadCNTheme.space3));
       cards.add(_buildNoticeCard(context, content));
     }
+
+    // Copyright
+    cards.add(const SizedBox(height: ShadCNTheme.space4));
+    cards.add(CopyrightWidget());
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

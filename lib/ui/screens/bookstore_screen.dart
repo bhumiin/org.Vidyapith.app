@@ -7,6 +7,7 @@ import '../../services/website_scraper.dart';
 import '../components/button.dart';
 import '../components/card.dart';
 import '../theme/shadcn_theme.dart';
+import '../components/copyright_widget.dart';
 
 /// Bookstore Screen - This screen displays information about the Vidyapith bookstore.
 /// 
@@ -172,6 +173,8 @@ class _BookstoreScreenState extends State<BookstoreScreen> {
           const SizedBox(height: ShadCNTheme.space3),
           _buildContactCard(context, content.contactEmail!),
         ],
+        const SizedBox(height: ShadCNTheme.space4),
+        CopyrightWidget(),
       ],
     );
   }

@@ -1,4 +1,4 @@
-package com.example.vidyapith_hybrid_app
+package com.vidyapith.vidyapith_hybrid_app
 
 import io.flutter.embedding.android.FlutterActivity
 

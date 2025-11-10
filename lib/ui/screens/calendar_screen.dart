@@ -7,6 +7,7 @@ import '../components/card.dart';
 import '../../models/calendar_event.dart';
 import '../../services/calendar_scraper.dart';
 import '../components/logo_leading.dart';
+import '../components/copyright_widget.dart';
 
 /// Calendar Screen - This screen displays a monthly calendar view with all Vidyapith events.
 /// 
@@ -166,6 +167,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   _buildErrorState(context, isDark)
                 else
                   _buildCalendarContent(context, isDark),
+                CopyrightWidget(),
                 const SizedBox(height: ShadCNTheme.space12),
               ],
             ),

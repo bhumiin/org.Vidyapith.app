@@ -7,6 +7,7 @@ import '../../services/website_scraper.dart';
 import '../theme/shadcn_theme.dart';
 import '../components/button.dart';
 import '../components/card.dart';
+import '../components/copyright_widget.dart';
 
 /// Class Detail Screen - This screen shows detailed information about a specific class category.
 /// 
@@ -173,6 +174,8 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
           ),
           const SizedBox(height: ShadCNTheme.space3),
           _buildSection(content.adultsSection, theme, isDark),
+          const SizedBox(height: ShadCNTheme.space4),
+          CopyrightWidget(),
         ],
       ),
     );
@@ -278,54 +281,61 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
   ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(ShadCNTheme.space4),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final bool isWide = constraints.maxWidth >= 768;
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final bool isWide = constraints.maxWidth >= 768;
 
-          if (isWide) {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: _buildMusicSection(
-                    content.vocalSection,
-                    content.vocalThumbnailUrl,
-                    theme,
-                    isDark,
-                  ),
-                ),
-                const SizedBox(width: ShadCNTheme.space4),
-                Expanded(
-                  child: _buildMusicSection(
-                    content.tablaSection,
-                    content.tablaThumbnailUrl,
-                    theme,
-                    isDark,
-                  ),
-                ),
-              ],
-            );
-          } else {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildMusicSection(
-                  content.vocalSection,
-                  content.vocalThumbnailUrl,
-                  theme,
-                  isDark,
-                ),
-                const SizedBox(height: ShadCNTheme.space6),
-                _buildMusicSection(
-                  content.tablaSection,
-                  content.tablaThumbnailUrl,
-                  theme,
-                  isDark,
-                ),
-              ],
-            );
-          }
-        },
+              if (isWide) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _buildMusicSection(
+                        content.vocalSection,
+                        content.vocalThumbnailUrl,
+                        theme,
+                        isDark,
+                      ),
+                    ),
+                    const SizedBox(width: ShadCNTheme.space4),
+                    Expanded(
+                      child: _buildMusicSection(
+                        content.tablaSection,
+                        content.tablaThumbnailUrl,
+                        theme,
+                        isDark,
+                      ),
+                    ),
+                  ],
+                );
+              } else {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildMusicSection(
+                      content.vocalSection,
+                      content.vocalThumbnailUrl,
+                      theme,
+                      isDark,
+                    ),
+                    const SizedBox(height: ShadCNTheme.space6),
+                    _buildMusicSection(
+                      content.tablaSection,
+                      content.tablaThumbnailUrl,
+                      theme,
+                      isDark,
+                    ),
+                  ],
+                );
+              }
+            },
+          ),
+          const SizedBox(height: ShadCNTheme.space4),
+          CopyrightWidget(),
+        ],
       ),
     );
   }
@@ -624,6 +634,8 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
               ],
             ),
           ),
+          const SizedBox(height: ShadCNTheme.space4),
+          CopyrightWidget(),
         ],
       ),
     );
