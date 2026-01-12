@@ -15,6 +15,7 @@ import 'class_detail_screen.dart';
 import 'donate_screen.dart';
 import 'admissions_screen.dart';
 import 'snack_signup_screen.dart';
+import 'dynamic_link_detail_screen.dart';
 
 /// Home Screen - The main landing page of the app
 /// This screen displays:
@@ -194,6 +195,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildWelcomeSection(context, isDark),
                 // Photo carousel showing school images
                 _buildPhotoCarouselSection(context, isDark),
+                // Dynamic link tile (if detected) - positioned after Photo Carousel
+                if (_websiteContent?.dynamicLink != null)
+                  _buildDynamicLinkSection(context, isDark),
                 // Upcoming events list
                 _buildEventsSection(context, isDark),
                 // Quick links grid (Snack Signup, Classes, etc.)
@@ -747,12 +751,6 @@ class _HomeScreenState extends State<HomeScreen> {
         'url': 'internal://class/Music Classes', // Opens class detail screen
       },
       {
-        'icon': Icons.assignment,
-        'label': '2025 DIWALI TOPICS',
-        'url':
-            'https://www.vidyapith.org/uploads/5/2/1/3/52135817/2025-diwali_projects_suggestions.pdf', // Opens PDF in browser
-      },
-      {
         'icon': Icons.local_fire_department,
         'label': 'SUMMER CAMP CLASSES',
         'url': 'internal://class/Summer Camp', // Opens class detail screen
@@ -992,6 +990,88 @@ class _HomeScreenState extends State<HomeScreen> {
       const SnackBar(
         content: Text('Unable to open link. Please try again later.'),
         behavior: SnackBarBehavior.floating, // Floating above the bottom navigation
+      ),
+    );
+  }
+
+  /// Builds the dynamic link section
+  /// Displays a single tile for dynamically detected links from the homepage
+  /// Positioned between Quote of the Day and Photo Carousel
+  Widget _buildDynamicLinkSection(BuildContext context, bool isDark) {
+    final dynamicLink = _websiteContent?.dynamicLink;
+    if (dynamicLink == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        ShadCNTheme.space4,
+        ShadCNTheme.space4,
+        ShadCNTheme.space4,
+        ShadCNTheme.space4,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            // Navigate to detail screen
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => DynamicLinkDetailScreen(dynamicLink: dynamicLink),
+              ),
+            );
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF0B73DA).withOpacity(0.22)
+                  : const Color(0xFFE8F1FF),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? const Color(0xFF2D3748) : const Color(0xFFE0E7FF),
+              ),
+            ),
+            padding: const EdgeInsets.all(ShadCNTheme.space4),
+            child: Row(
+              children: [
+                // Icon
+                Icon(
+                  Icons.campaign,
+                  color: isDark
+                      ? const Color(0xFF60A5FA)
+                      : const Color(0xFF0B73DA),
+                  size: 28,
+                ),
+                const SizedBox(width: ShadCNTheme.space3),
+                // Label text
+                Expanded(
+                  child: Text(
+                    dynamicLink.title,
+                    style: TextStyle(
+                      color: isDark
+                          ? const Color(0xFFE5E7EB)
+                          : const Color(0xFF424242),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                // Arrow icon
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: isDark
+                      ? const Color(0xFF60A5FA)
+                      : const Color(0xFF0B73DA),
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

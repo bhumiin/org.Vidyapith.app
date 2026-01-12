@@ -21,6 +21,7 @@ import 'ui/screens/home_screen.dart';
 import 'ui/screens/events_screen.dart';
 import 'ui/screens/calendar_screen.dart';
 import 'ui/screens/contact_screen.dart';
+import 'ui/screens/splash_screen.dart';
 import 'services/daily_refresh.dart';
 
 /// Main entry point of the application
@@ -32,12 +33,13 @@ void main() {
 
 /// Root application widget
 /// This sets up the entire app with its theme (light/dark mode) and
-/// determines which screen to show first (MainScreen)
+/// determines which screen to show first (SplashScreen, then MainScreen)
 /// 
 /// Features:
 /// - App name: "Vidyapith"
 /// - Automatic theme switching based on device settings (light/dark mode)
 /// - Custom theme colors for both light and dark modes
+/// - Splash screen shown first, then navigates to MainScreen
 class VidyapithApp extends StatelessWidget {
   const VidyapithApp({super.key});
 
@@ -48,7 +50,7 @@ class VidyapithApp extends StatelessWidget {
       theme: ShadCNTheme.lightTheme, // Light mode colors and styling
       darkTheme: ShadCNTheme.darkTheme, // Dark mode colors and styling
       themeMode: ThemeMode.system, // Automatically follows device theme setting
-      home: const MainScreen(), // The first screen users see when app opens
+      home: const SplashScreen(), // The first screen users see when app opens (splash screen)
     );
   }
 }

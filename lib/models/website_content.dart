@@ -58,6 +58,49 @@ class UpcomingEvent {
   );
 }
 
+/// Represents a dynamically detected link from the homepage.
+/// 
+/// This is used to display new clickable links found on the Vidyapith.org
+/// homepage that are not already in the Quick Links section.
+class DynamicLink {
+  /// The link text/title from the homepage.
+  final String title;
+  
+  /// The resolved URL of the link.
+  final String url;
+  
+  /// Optional timestamp when this link was detected.
+  final DateTime? detectedAt;
+
+  /// Creates a new DynamicLink.
+  /// 
+  /// [title] and [url] are required, [detectedAt] is optional.
+  const DynamicLink({
+    required this.title,
+    required this.url,
+    this.detectedAt,
+  });
+
+  /// Converts this object to JSON format for storage.
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    'url': url,
+    'detectedAt': detectedAt?.toIso8601String(),
+  };
+
+  /// Creates a DynamicLink from JSON data.
+  /// 
+  /// If the title or url is missing, it defaults to an empty string.
+  /// If detectedAt is missing, it remains null.
+  factory DynamicLink.fromJson(Map<String, dynamic> json) => DynamicLink(
+    title: json['title'] as String? ?? '',
+    url: json['url'] as String? ?? '',
+    detectedAt: json['detectedAt'] != null
+        ? DateTime.tryParse(json['detectedAt'] as String)
+        : null,
+  );
+}
+
 /// Main content container for the home screen.
 /// 
 /// This class holds all the dynamic content that gets displayed on the
@@ -76,6 +119,11 @@ class WebsiteContent {
   /// These are typically photos of recent events or activities.
   final List<String> carouselImages;
   
+  /// Dynamically detected link from the homepage (if any).
+  /// This represents a new clickable link found on the homepage that is
+  /// not already in the Quick Links section.
+  final DynamicLink? dynamicLink;
+  
   /// Timestamp when this content was fetched from the website.
   /// Used to determine if we need to refresh the data.
   final DateTime fetchedAt;
@@ -87,17 +135,19 @@ class WebsiteContent {
     this.thoughtOfTheDay,
     this.upcomingEvents = const [],
     this.carouselImages = const [],
+    this.dynamicLink,
     required this.fetchedAt,
   });
 
   /// Converts this WebsiteContent to JSON format for local storage.
   /// 
-  /// Converts nested objects (ThoughtOfTheDay, UpcomingEvent) to JSON
+  /// Converts nested objects (ThoughtOfTheDay, UpcomingEvent, DynamicLink) to JSON
   /// using their respective toJson() methods.
   Map<String, dynamic> toJson() => {
     'thoughtOfTheDay': thoughtOfTheDay?.toJson(),
     'upcomingEvents': upcomingEvents.map((e) => e.toJson()).toList(),
     'carouselImages': carouselImages,
+    'dynamicLink': dynamicLink?.toJson(),
     'fetchedAt': fetchedAt.toIso8601String(),
   };
 
@@ -121,6 +171,12 @@ class WebsiteContent {
         .map((e) => e as String? ?? '')
         .where((e) => e.isNotEmpty)
         .toList(),
+    // Convert dynamicLink from JSON if it exists, otherwise null
+    dynamicLink: json['dynamicLink'] != null
+        ? DynamicLink.fromJson(
+            Map<String, dynamic>.from(json['dynamicLink'] as Map),
+          )
+        : null,
     // Parse the fetchedAt timestamp, or use epoch zero if invalid
     fetchedAt:
         DateTime.tryParse(json['fetchedAt'] as String? ?? '') ??

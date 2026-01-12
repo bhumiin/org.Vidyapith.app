@@ -43,3 +43,20 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Screenshots
+*.heic
+Screenshot*.heic
+
+# Sensitive files (root level)
+/key.properties
+*.keystore
+*.jks
+
+# Temporary folders
+org.Vidyapith.app/
+
+# Temporary image files in root (keep assets/images/)
+vidyapith_*.jpg
+vidyapith_*.png
+letterhead.png

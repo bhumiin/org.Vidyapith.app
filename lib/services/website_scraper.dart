@@ -239,12 +239,14 @@ class WebsiteScraper {
     final thought = _parseThoughtOfTheDay(document);
     final events = _parseUpcomingEvents(document);
     final carouselImages = _parseCarouselImages(document);
+    final dynamicLink = _parseDynamicLink(document);
 
     // Combine everything into a WebsiteContent object
     return WebsiteContent(
       thoughtOfTheDay: thought,
       upcomingEvents: events,
       carouselImages: carouselImages,
+      dynamicLink: dynamicLink,
       fetchedAt: DateTime.now(), // Record when we fetched this data
     );
   }
@@ -989,6 +991,494 @@ class WebsiteScraper {
     return results;
   }
 
+  /// Parses the homepage to find a dynamic link that is not already in Quick Links.
+  /// 
+  /// Scans the homepage for clickable links and returns the first qualifying link
+  /// that is not already part of the Quick Links section. This method is designed
+  /// to be generic and will detect any new dynamic links that appear on the homepage,
+  /// not just specific hardcoded ones.
+  /// 
+  /// Returns null if no qualifying link is found.
+  DynamicLink? _parseDynamicLink(Document document) {
+    // List of URLs that are already in Quick Links - exclude these
+    final excludedUrls = {
+      'internal://snack-signup',
+      'internal://class/curricular classes',
+      'internal://class/music classes',
+      'internal://class/summer camp',
+      'https://vidyapith-act.netlify.app/',
+      'internal://bookstore',
+      'internal://admissions',
+      'internal://donate',
+      'https://www.vidyapith.org/uploads/5/2/1/3/52135817/2025-diwali_projects_suggestions.pdf',
+    };
+
+    // Also exclude common navigation and footer links
+    final excludedPatterns = [
+      '/about',
+      '/events',
+      '/contact',
+      '/calendar',
+      'mailto:',
+      'javascript:',
+      '#',
+    ];
+
+    final baseUri = _homepageUri;
+    final anchors = document.querySelectorAll('a');
+
+    // Scan all links and find the first qualifying one
+    for (final anchor in anchors) {
+      final href = anchor.attributes['href'];
+      if (href == null || href.isEmpty) continue;
+
+      // Skip email links
+      if (href.startsWith('mailto:')) continue;
+
+      // Skip JavaScript links
+      if (href.startsWith('javascript:')) continue;
+
+      // Skip anchor links (same page navigation)
+      if (href.startsWith('#')) continue;
+
+      // Resolve relative URLs
+      final resolvedUrl = _resolveHref(href, baseUri);
+      if (resolvedUrl == null || resolvedUrl.isEmpty) continue;
+
+      // Check if URL is excluded
+      final lowerUrl = resolvedUrl.toLowerCase();
+      bool isExcluded = false;
+
+      // Check against excluded URLs
+      for (final excluded in excludedUrls) {
+        if (lowerUrl.contains(excluded.toLowerCase())) {
+          isExcluded = true;
+          break;
+        }
+      }
+
+      // Check against excluded patterns
+      if (!isExcluded) {
+        for (final pattern in excludedPatterns) {
+          if (lowerUrl.contains(pattern.toLowerCase())) {
+            isExcluded = true;
+            break;
+          }
+        }
+      }
+
+      if (isExcluded) continue;
+
+      // Skip links that are clearly navigation (header/footer)
+      // But be less aggressive - only exclude if we're very sure it's navigation
+      Element? parent = anchor.parent;
+      int depth = 0;
+      bool isNavigation = false;
+      while (parent != null && depth < 5) {
+        final classes = parent.classes.join(' ').toLowerCase();
+        final id = parent.id.toLowerCase();
+        final tagName = parent.localName?.toLowerCase() ?? '';
+        
+        // Only exclude if it's clearly in a nav/menu/header/footer element
+        // Be less strict to allow content links through
+        if ((classes.contains('nav') && !classes.contains('content')) ||
+            (classes.contains('menu') && !classes.contains('content')) ||
+            (tagName == 'nav') ||
+            (tagName == 'header' && id.contains('header') && !classes.contains('content')) ||
+            (tagName == 'footer' && id.contains('footer'))) {
+          isNavigation = true;
+          break;
+        }
+        parent = parent.parent;
+        depth++;
+      }
+
+      if (isNavigation) continue;
+
+      // Extract link text
+      final linkText = _cleanHtml(anchor.innerHtml).trim();
+      if (linkText.isEmpty) continue;
+      
+      // Skip very short link text (likely not meaningful content)
+      if (linkText.length < 3) continue;
+      
+      // Skip links that are just URLs or file names
+      if (linkText.toLowerCase().startsWith('http://') ||
+          linkText.toLowerCase().startsWith('https://') ||
+          linkText.toLowerCase().endsWith('.pdf') ||
+          linkText.toLowerCase().endsWith('.jpg') ||
+          linkText.toLowerCase().endsWith('.png')) {
+        continue;
+      }
+
+      // Found a qualifying link - return it
+      return DynamicLink(
+        title: linkText,
+        url: resolvedUrl,
+        detectedAt: DateTime.now(),
+      );
+    }
+
+    // No qualifying link found
+    return null;
+  }
+
+  /// Fetches all clickable links from a given page, excluding navigation links.
+  /// 
+  /// Downloads the page HTML, parses all anchor tags, and extracts
+  /// link text and URLs. Filters out common navigation links (Home, About, etc.)
+  /// and links that are in navigation elements. Returns only links that are
+  /// part of the main content.
+  /// 
+  /// [url] - The URL of the page to fetch links from.
+  /// 
+  /// Returns: List of maps with 'text' (String) and 'url' (String) keys.
+  /// Throws: http.ClientException if the HTTP request fails.
+  Future<List<Map<String, String>>> fetchPageLinks(String url) async {
+    final uri = Uri.parse(url);
+    final response = await _client.get(uri);
+
+    if (response.statusCode != 200) {
+      throw http.ClientException(
+        'Failed to load page links (status: ${response.statusCode})',
+        uri,
+      );
+    }
+
+    final document = html_parser.parse(utf8.decode(response.bodyBytes));
+    final baseUri = uri;
+    final List<Map<String, String>> links = [];
+
+    // Common navigation link texts to exclude
+    final excludedNavTexts = {
+      'home',
+      'about',
+      'classes',
+      'events',
+      'calendar',
+      'contact',
+      'contact us',
+      'bookstore',
+      'admissions',
+      'donate',
+      'donation',
+      'gallery',
+      'photos',
+      'news',
+      'blog',
+    };
+
+    // Common navigation URL patterns to exclude
+    final excludedNavPatterns = [
+      '/about',
+      '/events',
+      '/contact',
+      '/calendar',
+      '/classes',
+      '/bookstore',
+      '/admissions',
+      '/donate',
+      '/gallery',
+      '/photos',
+      '/news',
+      '/blog',
+      '#top',
+      '#main',
+      '#content',
+    ];
+
+    for (final anchor in document.querySelectorAll('a')) {
+      final href = anchor.attributes['href'];
+      if (href == null || href.isEmpty) continue;
+
+      // Skip email links
+      if (href.startsWith('mailto:')) continue;
+
+      // Skip JavaScript links
+      if (href.startsWith('javascript:')) continue;
+
+      // Skip anchor links (same page navigation)
+      if (href.startsWith('#')) continue;
+
+      // Resolve relative URLs
+      final resolvedUrl = _resolveHref(href, baseUri);
+      if (resolvedUrl == null || resolvedUrl.isEmpty) continue;
+
+      // Extract link text
+      final linkText = _cleanHtml(anchor.innerHtml).trim();
+      if (linkText.isEmpty) continue;
+
+      final lowerLinkText = linkText.toLowerCase();
+      final lowerUrl = resolvedUrl.toLowerCase();
+
+      // Check if this is a navigation link by text
+      bool isNavLink = excludedNavTexts.contains(lowerLinkText);
+
+      // Check if this is a navigation link by URL pattern
+      if (!isNavLink) {
+        for (final pattern in excludedNavPatterns) {
+          if (lowerUrl.contains(pattern.toLowerCase())) {
+            isNavLink = true;
+            break;
+          }
+        }
+      }
+
+      // Check if link is in navigation elements (nav, header, footer)
+      if (!isNavLink) {
+        Element? parent = anchor.parent;
+        int depth = 0;
+        while (parent != null && depth < 6) {
+          final classes = parent.classes.join(' ').toLowerCase();
+          final id = parent.id.toLowerCase();
+          final tagName = parent.localName?.toLowerCase() ?? '';
+          
+          // Check if it's in a navigation element
+          if (classes.contains('nav') ||
+              classes.contains('menu') ||
+              classes.contains('navigation') ||
+              classes.contains('header') ||
+              classes.contains('footer') ||
+              tagName == 'nav' ||
+              tagName == 'header' ||
+              tagName == 'footer' ||
+              id.contains('nav') ||
+              id.contains('menu') ||
+              id.contains('header') ||
+              id.contains('footer')) {
+            isNavLink = true;
+            break;
+          }
+          parent = parent.parent;
+          depth++;
+        }
+      }
+
+      // Skip navigation links
+      if (isNavLink) continue;
+
+      // Skip very short link text (likely not meaningful)
+      if (linkText.length < 3) continue;
+
+      // Skip links that are just URLs or file names
+      if (linkText.toLowerCase().startsWith('http://') ||
+          linkText.toLowerCase().startsWith('https://') ||
+          linkText.toLowerCase().endsWith('.pdf') ||
+          linkText.toLowerCase().endsWith('.jpg') ||
+          linkText.toLowerCase().endsWith('.png')) {
+        continue;
+      }
+
+      // Found a content link - add it
+      links.add({'text': linkText, 'url': resolvedUrl});
+    }
+
+    return links;
+  }
+
+  /// Fetches page content and extracts title and main content text.
+  /// 
+  /// Downloads the page HTML and attempts to extract:
+  /// - Page title (from h1, h2, or title tag)
+  /// - Main content text (from main, .content, article, paragraphs, or body)
+  /// - Structured content with better formatting preservation
+  /// 
+  /// [url] - The URL of the page to fetch content from.
+  /// 
+  /// Returns: Map with 'title' (String?) and 'content' (String?) keys.
+  /// Throws: http.ClientException if the HTTP request fails.
+  Future<Map<String, String?>> fetchPageContent(String url) async {
+    final uri = Uri.parse(url);
+    final response = await _client.get(uri);
+
+    if (response.statusCode != 200) {
+      throw http.ClientException(
+        'Failed to load page content (status: ${response.statusCode})',
+        uri,
+      );
+    }
+
+    final document = html_parser.parse(utf8.decode(response.bodyBytes));
+    String? pageTitle;
+    String? pageContent;
+
+    // Try to extract page title - prioritize h1, then h2, then title tag
+    final titleElement = document.querySelector('h1') ??
+        document.querySelector('h2') ??
+        document.querySelector('title');
+    if (titleElement != null) {
+      pageTitle = _cleanHtml(titleElement.innerHtml).trim();
+    }
+
+    // Try to extract main content with better structure
+    Element? mainContentElement = document.querySelector('main') ??
+        document.querySelector('.content') ??
+        document.querySelector('.wsite-content') ??
+        document.querySelector('article') ??
+        document.querySelector('.paragraph') ??
+        document.querySelector('body');
+
+    if (mainContentElement != null) {
+      // Extract structured content - headings, paragraphs, lists, etc.
+      final List<String> contentParts = [];
+      
+      // First, extract headings and their following content
+      final headings = mainContentElement.querySelectorAll('h1, h2, h3, h4, h5, h6, strong');
+      final processedElements = <Element>{};
+      
+      // Process headings and their following content
+      for (final heading in headings) {
+        if (processedElements.contains(heading)) continue;
+        
+        final headingText = heading.text?.trim() ?? '';
+        if (headingText.isEmpty) continue;
+        
+        // Check if this heading is significant (not too short, not just formatting)
+        if (headingText.length < 3) continue;
+        
+        // Find the content that follows this heading
+        Element? nextSibling = heading.nextElementSibling;
+        String? followingContent;
+        
+        // Look for content in the next sibling (usually a paragraph or div)
+        if (nextSibling != null && 
+            (nextSibling.localName == 'p' || 
+             nextSibling.localName == 'div' ||
+             nextSibling.localName == 'span')) {
+          final contentText = nextSibling.text?.trim() ?? '';
+          if (contentText.isNotEmpty && contentText.length > 3) {
+            followingContent = contentText
+                .replaceAll(RegExp(r'\s+'), ' ')
+                .trim();
+            processedElements.add(nextSibling);
+          }
+        }
+        
+        // Combine heading and content with line break
+        if (followingContent != null && followingContent.isNotEmpty) {
+          contentParts.add('$headingText\n\n$followingContent');
+        } else {
+          // Just the heading if no following content found
+          contentParts.add(headingText);
+        }
+        
+        processedElements.add(heading);
+      }
+      
+      // Extract paragraphs that weren't already processed
+      final paragraphs = mainContentElement.querySelectorAll('p');
+      for (final p in paragraphs) {
+        if (processedElements.contains(p)) continue;
+        
+        // Check if this paragraph contains a heading
+        final hasHeading = p.querySelector('h1, h2, h3, h4, h5, h6, strong') != null;
+        
+        if (hasHeading) {
+          // Extract heading and content separately
+          final heading = p.querySelector('h1, h2, h3, h4, h5, h6, strong');
+          if (heading != null) {
+            final headingText = heading.text?.trim() ?? '';
+            // Get text after the heading
+            final allText = p.text?.trim() ?? '';
+            final afterHeading = allText.replaceFirst(headingText, '').trim();
+            
+            if (headingText.isNotEmpty && afterHeading.isNotEmpty) {
+              final cleanedHeading = headingText.replaceAll(RegExp(r'\s+'), ' ').trim();
+              final cleanedContent = afterHeading.replaceAll(RegExp(r'\s+'), ' ').trim();
+              contentParts.add('$cleanedHeading\n\n$cleanedContent');
+            } else if (headingText.isNotEmpty) {
+              contentParts.add(headingText.replaceAll(RegExp(r'\s+'), ' ').trim());
+            }
+          }
+        } else {
+          // Regular paragraph without heading
+          final rawText = p.text ?? '';
+          final cleaned = rawText
+              .replaceAll(RegExp(r'\s+'), ' ')
+              .trim();
+          if (cleaned.isNotEmpty && cleaned.length > 3) {
+            contentParts.add(cleaned);
+          }
+        }
+        
+        processedElements.add(p);
+      }
+      
+      // Extract list items
+      final listItems = mainContentElement.querySelectorAll('li');
+      for (final li in listItems) {
+        if (processedElements.contains(li)) continue;
+        
+        final rawText = li.text ?? '';
+        final cleaned = rawText
+            .replaceAll(RegExp(r'\s+'), ' ')
+            .trim();
+        if (cleaned.isNotEmpty && cleaned.length > 3) {
+          contentParts.add('• $cleaned');
+        }
+        processedElements.add(li);
+      }
+      
+      // Extract div content if no paragraphs found
+      if (contentParts.isEmpty) {
+        final divs = mainContentElement.querySelectorAll('div.paragraph, div.wsite-text');
+        for (final div in divs) {
+          // Check for headings within div
+          final heading = div.querySelector('h1, h2, h3, h4, h5, h6, strong');
+          if (heading != null) {
+            final headingText = heading.text?.trim() ?? '';
+            final allText = div.text?.trim() ?? '';
+            final afterHeading = allText.replaceFirst(headingText, '').trim();
+            
+            if (headingText.isNotEmpty && afterHeading.isNotEmpty) {
+              final cleanedHeading = headingText.replaceAll(RegExp(r'\s+'), ' ').trim();
+              final cleanedContent = afterHeading.replaceAll(RegExp(r'\s+'), ' ').trim();
+              contentParts.add('$cleanedHeading\n\n$cleanedContent');
+            } else if (headingText.isNotEmpty) {
+              contentParts.add(headingText.replaceAll(RegExp(r'\s+'), ' ').trim());
+            }
+          } else {
+            final rawText = div.text ?? '';
+            final cleaned = rawText
+                .replaceAll(RegExp(r'\s+'), ' ')
+                .trim();
+            if (cleaned.isNotEmpty && cleaned.length > 10) {
+              contentParts.add(cleaned);
+            }
+          }
+        }
+      }
+      
+      // If still no structured content, fall back to cleaned HTML
+      if (contentParts.isEmpty) {
+        final rawText = mainContentElement.text ?? '';
+        final cleaned = rawText
+            .replaceAll(RegExp(r'\s+'), ' ')
+            .trim();
+        if (cleaned.isNotEmpty) {
+          contentParts.add(cleaned);
+        }
+      }
+      
+      // Join content parts with double newlines for paragraph breaks
+      pageContent = contentParts.join('\n\n');
+      
+      // Final cleanup: normalize line breaks
+      pageContent = pageContent
+          .replaceAll(RegExp(r'\n{3,}'), '\n\n')  // Max 2 newlines
+          .replaceAll(RegExp(r'[ \t]+\n'), '\n')  // Remove spaces before newlines
+          .replaceAll(RegExp(r'\n[ \t]+'), '\n')  // Remove spaces after newlines
+          .trim();
+      
+      // Limit content length but be more generous
+      if (pageContent.length > 5000) {
+        pageContent = '${pageContent.substring(0, 5000)}...';
+      }
+    }
+
+    return {'title': pageTitle, 'content': pageContent};
+  }
+
   Future<BookstoreContent> getBookstoreContent({
     bool forceRefresh = false,
   }) async {
@@ -1256,20 +1746,71 @@ class WebsiteScraper {
     final heading = _findHeading(document, 'upcoming events');
     if (heading == null) return const [];
 
-    final paragraph =
-        heading.nextElementSibling ?? heading.parent?.nextElementSibling;
-    if (paragraph == null) return const [];
+    // Find the parent container that holds the events section
+    Element? container = heading.parent;
+    if (container == null) return const [];
 
-    final cleaned = _cleanHtml(paragraph.innerHtml);
-    if (cleaned.isEmpty) return const [];
+    // Collect content from siblings following the heading, stopping at next section
+    final List<String> eventLines = [];
+    Element? current = heading.nextElementSibling;
+    int depth = 0;
+    const maxDepth = 10; // Prevent infinite loops
 
-    final entries = cleaned
-        .split(RegExp(r'\n+'))
-        .map((line) => line.trim())
-        .where((line) => line.isNotEmpty)
-        .toList();
+    while (current != null && depth < maxDepth) {
+      // Stop if we encounter another heading (indicates next section)
+      final tagName = current.localName?.toLowerCase() ?? '';
+      if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].contains(tagName)) {
+        final headingText = _cleanHtml(current.innerHtml).toLowerCase();
+        // Stop if this is a different section heading (not "upcoming events")
+        if (!headingText.contains('upcoming events')) {
+          break;
+        }
+      }
 
-    return entries.map((entry) {
+      // Extract text content from this element
+      final cleaned = _cleanHtml(current.innerHtml);
+      if (cleaned.isNotEmpty) {
+        final lines = cleaned
+            .split(RegExp(r'\n+'))
+            .map((line) => line.trim())
+            .where((line) => line.isNotEmpty)
+            .toList();
+        eventLines.addAll(lines);
+      }
+
+      // Move to next sibling
+      current = current.nextElementSibling;
+      depth++;
+    }
+
+    // If we didn't find content in siblings, try the parent's next sibling
+    if (eventLines.isEmpty) {
+      final parentNext = heading.parent?.nextElementSibling;
+      if (parentNext != null) {
+        final cleaned = _cleanHtml(parentNext.innerHtml);
+        if (cleaned.isNotEmpty) {
+          eventLines.addAll(
+            cleaned
+                .split(RegExp(r'\n+'))
+                .map((line) => line.trim())
+                .where((line) => line.isNotEmpty)
+                .toList(),
+          );
+        }
+      }
+    }
+
+    if (eventLines.isEmpty) return const [];
+
+    final now = DateTime.now();
+    final currentYear = now.year;
+    final currentMonth = now.month;
+    final currentDay = now.day;
+
+    // Parse events and filter out past events
+    final today = DateTime(currentYear, currentMonth, currentDay);
+    
+    return eventLines.map((entry) {
       final segments = entry.split(' - ');
       final title = segments.isNotEmpty ? segments.last.trim() : entry.trim();
       final details = segments.length > 1
@@ -1279,6 +1820,79 @@ class WebsiteScraper {
         title: title,
         details: (details != null && details.isNotEmpty) ? details : null,
       );
+    }).where((event) {
+      // Filter out past events by checking if the event date is in the past
+      final eventText = '${event.details ?? ''} ${event.title}'.toLowerCase();
+      
+      // Try to parse date from event text (format: "Month Day" or "Month Day, Year")
+      final dateMatch = RegExp(
+        r'(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:\s*,\s*(\d{4}))?',
+        caseSensitive: false,
+      ).firstMatch(eventText);
+
+      // If no date found, exclude the event - we only want events with dates
+      if (dateMatch == null) {
+        return false;
+      }
+
+      final monthName = dateMatch.group(1)!.toLowerCase();
+      final dayStr = dateMatch.group(2) ?? '';
+      final day = int.tryParse(dayStr);
+      if (day == null || day < 1 || day > 31) {
+        return false; // Invalid day
+      }
+      
+      final yearStr = dateMatch.group(3);
+      int year;
+      if (yearStr != null && yearStr.isNotEmpty) {
+        year = int.tryParse(yearStr) ?? currentYear;
+      } else {
+        // If no year specified, assume current year or next year if month has passed
+        year = currentYear;
+        // If the month has already passed this year, assume next year
+        final monthMap = {
+          'january': 1, 'february': 2, 'march': 3, 'april': 4,
+          'may': 5, 'june': 6, 'july': 7, 'august': 8,
+          'september': 9, 'october': 10, 'november': 11, 'december': 12,
+        };
+        final month = monthMap[monthName] ?? 1;
+        if (month < currentMonth || (month == currentMonth && day < currentDay)) {
+          year = currentYear + 1;
+        }
+      }
+
+      // Map month name to number
+      final monthMap = {
+        'january': 1,
+        'february': 2,
+        'march': 3,
+        'april': 4,
+        'may': 5,
+        'june': 6,
+        'july': 7,
+        'august': 8,
+        'september': 9,
+        'october': 10,
+        'november': 11,
+        'december': 12,
+      };
+
+      final month = monthMap[monthName] ?? 1;
+      if (month < 1 || month > 12) {
+        return false; // Invalid month
+      }
+
+      // Create event date
+      try {
+        final eventDate = DateTime(year, month, day);
+        final eventDateOnly = DateTime(eventDate.year, eventDate.month, eventDate.day);
+
+        // Only include events that are today or in the future (strictly exclude past events)
+        return eventDateOnly.isAfter(today) || eventDateOnly.isAtSameMomentAs(today);
+      } catch (_) {
+        // Invalid date (e.g., February 30)
+        return false;
+      }
     }).toList();
   }
 
@@ -1298,24 +1912,24 @@ class WebsiteScraper {
   /// Helper method to clean HTML and extract plain text.
   /// 
   /// This method:
-  /// 1. Converts HTML line breaks (`<br>` tags) to newlines
+  /// 1. Converts HTML line breaks (`<br>` tags) to spaces (not newlines) for better text flow
   /// 2. Parses the HTML to extract text content (removes all HTML tags)
   /// 3. Replaces special characters (non-breaking spaces, zero-width spaces) with normal spaces
   /// 4. Normalizes line endings (converts \r to \n)
-  /// 5. Removes empty lines and trims whitespace from each line
+  /// 5. Removes excessive whitespace and normalizes spacing
   /// 
   /// This is useful because HTML contains tags like `<p>`, `<div>`, `<strong>`, etc.
   /// We only want the actual text content, not the formatting tags.
   /// 
   /// Example:
   /// Input: `<p>Hello <strong>world</strong>!</p><br>Next line`
-  /// Output: `Hello world!\nNext line`
+  /// Output: `Hello world! Next line`
   String _cleanHtml(String html) {
-    // Convert HTML line breaks to newline characters
+    // Convert HTML line breaks to spaces (not newlines) to avoid weird line breaks
     // This regex matches `<br>`, `<br/>`, `<br />`, etc. (case-insensitive)
     final withBreaks = html.replaceAll(
       RegExp(r'(<br\s*/?>)+', caseSensitive: false),
-      '\n',
+      ' ',
     );
     
     // Parse the HTML fragment to extract just the text content
@@ -1326,14 +1940,12 @@ class WebsiteScraper {
     final text = (fragment.text ?? '')
         .replaceAll('\u00A0', ' ')  // Replace non-breaking space with regular space
         .replaceAll('\u200B', '')   // Remove zero-width space characters
-        .replaceAll('\r', '\n');    // Normalize line endings (Windows uses \r\n)
+        .replaceAll('\r', ' ')      // Convert carriage returns to spaces
+        .replaceAll('\n', ' ')      // Convert newlines to spaces
+        .replaceAll(RegExp(r'\s+'), ' ')  // Replace multiple spaces with single space
+        .trim();                    // Remove leading/trailing whitespace
 
-    // Split into lines, trim each line, remove empty lines, then join back
-    return text
-        .split(RegExp(r'\n+'))           // Split on one or more newlines
-        .map((line) => line.trim())       // Remove leading/trailing whitespace from each line
-        .where((line) => line.isNotEmpty) // Remove empty lines
-        .join('\n');                      // Join back with single newlines
+    return text;
   }
 
   Future<EventsContent> getEventsContent({bool forceRefresh = false}) async {

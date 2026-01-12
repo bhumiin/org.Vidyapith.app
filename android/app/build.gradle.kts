@@ -22,8 +22,8 @@ android {
         applicationId = "com.vidyapith.vidyapith_hybrid_app"
         minSdk = flutter.minSdkVersion // or flutter.minSdkVersion
         targetSdk = 36 // or flutter.targetSdkVersion
-        versionCode = 3 // or flutter.versionCode
-        versionName = "1.0.2" // or flutter.versionName
+        versionCode = 7 // or flutter.versionCode
+        versionName = "1.0.4" // or flutter.versionName
     }
 
     signingConfigs {
