@@ -6,16 +6,16 @@ import 'package:url_launcher/url_launcher.dart';
 import '../theme/shadcn_theme.dart';
 import '../components/card.dart';
 import '../components/photo_carousel.dart';
+import '../components/events_carousel.dart';
 import '../components/copyright_widget.dart';
 import '../../models/website_content.dart';
 import '../../services/website_scraper.dart';
+import 'archive_screen.dart';
 import 'bookstore_screen.dart';
 import 'classes_screen.dart';
 import 'class_detail_screen.dart';
 import 'donate_screen.dart';
-import 'admissions_screen.dart';
 import 'snack_signup_screen.dart';
-import 'dynamic_link_detail_screen.dart';
 
 /// Home Screen - The main landing page of the app
 /// This screen displays:
@@ -195,8 +195,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildWelcomeSection(context, isDark),
                 // Photo carousel showing school images
                 _buildPhotoCarouselSection(context, isDark),
-                // Dynamic link tile (if detected) - positioned after Photo Carousel
-                if (_websiteContent?.dynamicLink != null)
+                // Dynamic link tiles (if detected) - positioned after Photo Carousel
+                if (_websiteContent?.dynamicLinks.isNotEmpty == true)
                   _buildDynamicLinkSection(context, isDark),
                 // Upcoming events list
                 _buildEventsSection(context, isDark),
@@ -403,7 +403,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// Builds the photo carousel section
-  /// Displays a scrolling gallery of school images that users can swipe through
+  /// Displays a scrolling gallery of school images that users can swipe through.
+  /// When available, the featured homepage quote is shown as the first slide.
   Widget _buildPhotoCarouselSection(BuildContext context, bool isDark) {
     // List of image URLs from the Vidyapith website
     // These are photos of the school that rotate automatically
@@ -414,13 +415,23 @@ class _HomeScreenState extends State<HomeScreen> {
       'https://www.vidyapith.org/uploads/5/2/1/3/52135817/3318585_orig.jpg',
     ];
 
+    final featuredQuote = _websiteContent?.featuredQuote;
+    final slides = <CarouselSlide>[
+      if (featuredQuote != null && featuredQuote.text.isNotEmpty)
+        CarouselQuoteSlide(
+          text: featuredQuote.text,
+          author: featuredQuote.author,
+        ),
+      ...carouselSlidesFromUrls(carouselImages),
+    ];
+
     return Container(
       color: isDark ? const Color(0xFF101922) : const Color(0xFFF5F7F8),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: ShadCNTheme.space4),
-        child: carouselImages.isEmpty
-            ? _buildCarouselLoadingPlaceholder(isDark) // Show loading if no images
-            : PhotoCarousel(imageUrls: carouselImages, isDark: isDark), // Show carousel
+        child: slides.isEmpty
+            ? _buildCarouselLoadingPlaceholder(isDark)
+            : PhotoCarousel(slides: slides, isDark: isDark),
       ),
     );
   }
@@ -491,20 +502,9 @@ class _HomeScreenState extends State<HomeScreen> {
               // Show loading spinner while fetching events
               if (isLoadingEvents) _buildLoadingEventPlaceholder(isDark),
               
-              // Show list of events if we have them
+              // Show carousel of events if we have them
               if (!isLoadingEvents && events.isNotEmpty)
-                ...List.generate(events.length, (index) {
-                  final event = events[index];
-                  return Padding(
-                    // Add spacing between events, except after the last one
-                    padding: EdgeInsets.only(
-                      bottom: index == events.length - 1
-                          ? 0 // No spacing after last event
-                          : ShadCNTheme.space3, // Spacing between events
-                    ),
-                    child: _buildEventCard(context, isDark, event),
-                  );
-                }),
+                EventsCarousel(events: events, isDark: isDark),
               
               // Show "No events" message if list is empty
               if (!isLoadingEvents && showEmptyState)
@@ -520,142 +520,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  /// Builds a single event card
-  /// Displays an event with a date badge on the left and event details on the right
-  Widget _buildEventCard(
-    BuildContext context,
-    bool isDark,
-    UpcomingEvent event,
-  ) {
-    // Extract month and day from the event text (e.g., "January 15" -> "JAN" and "15")
-    final (String?, String?) dateParts = _extractDateParts(event);
-    final String? month = dateParts.$1;
-    final String? day = dateParts.$2;
-    
-    // Get event details (additional info like time or location)
-    final String detailText = event.details ?? '';
-    
-    // Get the main event title/description
-    final String description = event.title.trim();
-
-    return ShadCard(
-      child: Container(
-        padding: const EdgeInsets.all(ShadCNTheme.space4),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1F2937) : const Color(0xFFF5F7F8),
-          borderRadius: BorderRadius.circular(20), // Rounded corners
-          border: Border.all(
-            color: isDark ? const Color(0xFF2D3748) : const Color(0xFFE0E7FF),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            // Date badge on the left (shows month and day, or event icon)
-            _buildEventLeadingBadge(isDark, month: month, day: day),
-            const SizedBox(width: ShadCNTheme.space4),
-            // Event details on the right
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Show details (time, location, etc.) if available
-                  if (detailText.isNotEmpty)
-                    Text(
-                      detailText,
-                      style: TextStyle(
-                        color: isDark
-                            ? const Color(0xFF9CA3AF)
-                            : const Color(0xFF6B7280),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  if (detailText.isNotEmpty)
-                    const SizedBox(height: ShadCNTheme.space1),
-                  // Show main event title/description
-                  Text(
-                    description,
-                    style: TextStyle(
-                      color: isDark ? Colors.white : const Color(0xFF424242),
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Builds the date badge shown on the left side of event cards
-  /// If date is available, shows month abbreviation (e.g., "JAN") and day number (e.g., "15")
-  /// If date is not available, shows a generic event icon instead
-  Widget _buildEventLeadingBadge(bool isDark, {String? month, String? day}) {
-    // If we have both month and day, show them in a date badge format
-    if (month != null && day != null) {
-      return Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: ShadCNTheme.space3,
-          vertical: ShadCNTheme.space2,
-        ),
-        decoration: BoxDecoration(
-          // Blue background with transparency
-          color: isDark
-              ? const Color(0xFF0B73DA).withOpacity(0.2)
-              : const Color(0xFF0B73DA).withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          children: [
-            // Month abbreviation (e.g., "JAN", "FEB")
-            Text(
-              month,
-              style: TextStyle(
-                color: isDark
-                    ? const Color(0xFF60A5FA) // Light blue
-                    : const Color(0xFF0B73DA), // Dark blue
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
-            ),
-            // Day number (e.g., "15", "03")
-            Text(
-              day,
-              style: TextStyle(
-                color: isDark
-                    ? const Color(0xFF60A5FA)
-                    : const Color(0xFF0B73DA),
-                fontSize: 24, // Larger font for day
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // If no date available, show a generic event icon
-    return Container(
-      padding: const EdgeInsets.all(ShadCNTheme.space3),
-      decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF0B73DA).withOpacity(0.2)
-            : const Color(0xFF0B73DA).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(
-        Icons.event_available_outlined, // Calendar/event icon
-        size: 28,
-        color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF0B73DA),
-      ),
     );
   }
 
@@ -697,36 +561,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Extracts month and day from event text
-  /// Looks for patterns like "January 15" or "March 3" in the event title/details
-  /// Returns month abbreviation (e.g., "JAN") and day (e.g., "15" or "03")
-  /// Returns null values if no date is found
-  (String?, String?) _extractDateParts(UpcomingEvent event) {
-    // Combine event details and title to search for date
-    final source = '${event.details ?? ''} ${event.title}'.trim();
-    
-    // Use regular expression to find month name followed by day number
-    // Pattern matches: "January 15", "March 3", etc.
-    final match = RegExp(
-      r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})',
-    ).firstMatch(source);
-
-    // If no date found, return null
-    if (match == null) return (null, null);
-    
-    // Extract the month name and day number
-    final monthName = match.group(1) ?? '';
-    final day = match.group(2) ?? '';
-    
-    // Convert full month name to 3-letter abbreviation (e.g., "January" -> "JAN")
-    final monthAbbrev = monthName.length >= 3
-        ? monthName.substring(0, 3) // Take first 3 letters
-        : monthName;
-
-    // Return uppercase month abbreviation and day with leading zero if needed
-    return (monthAbbrev.toUpperCase(), day.padLeft(2, '0')); // "3" becomes "03"
-  }
-
   /// Builds the "Quick Links" section
   /// Displays a grid of clickable tiles that navigate to different features
   /// Each tile shows an icon and label
@@ -766,14 +600,14 @@ class _HomeScreenState extends State<HomeScreen> {
         'url': 'internal://bookstore', // Opens Bookstore screen
       },
       {
-        'icon': Icons.app_registration,
-        'label': 'ADMISSIONS',
-        'url': 'internal://admissions', // Opens Admissions screen
-      },
-      {
         'icon': Icons.favorite_border,
         'label': 'DONATE',
         'url': 'internal://donate', // Opens Donate screen
+      },
+      {
+        'icon': Icons.inventory_2_outlined,
+        'label': 'ARCHIVE',
+        'url': 'internal://archive', // Opens Archive screen
       },
     ];
 
@@ -935,18 +769,18 @@ class _HomeScreenState extends State<HomeScreen> {
         ).push(MaterialPageRoute(builder: (_) => const BookstoreScreen()));
         return;
       }
-      if (url == 'internal://admissions') {
-        // Open the admissions screen
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const AdmissionsScreen()));
-        return;
-      }
       if (url == 'internal://snack-signup') {
         // Open the snack signup screen
         Navigator.of(
           context,
         ).push(MaterialPageRoute(builder: (_) => const SnackSignupScreen()));
+        return;
+      }
+      if (url == 'internal://archive') {
+        // Open the archive screen
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const ArchiveScreen()));
         return;
       }
       return;
@@ -994,12 +828,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Builds the dynamic link section
-  /// Displays a single tile for dynamically detected links from the homepage
-  /// Positioned between Quote of the Day and Photo Carousel
+  /// Builds the dynamic link section.
+  ///
+  /// Displays one campaign tile per consecutive homepage announcement link.
+  /// Each tile opens its URL in the system browser.
   Widget _buildDynamicLinkSection(BuildContext context, bool isDark) {
-    final dynamicLink = _websiteContent?.dynamicLink;
-    if (dynamicLink == null) {
+    final dynamicLinks = _websiteContent?.dynamicLinks ?? const <DynamicLink>[];
+    if (dynamicLinks.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -1010,69 +845,100 @@ class _HomeScreenState extends State<HomeScreen> {
         ShadCNTheme.space4,
         ShadCNTheme.space4,
       ),
-      child: Material(
-        color: Colors.transparent,
+      child: Column(
+        children: [
+          for (var i = 0; i < dynamicLinks.length; i++) ...[
+            if (i > 0) const SizedBox(height: ShadCNTheme.space3),
+            _buildDynamicLinkTile(context, isDark, dynamicLinks[i]),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Builds a single campaign announcement tile.
+  Widget _buildDynamicLinkTile(
+    BuildContext context,
+    bool isDark,
+    DynamicLink dynamicLink,
+  ) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () {
-            // Navigate to detail screen
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => DynamicLinkDetailScreen(dynamicLink: dynamicLink),
-              ),
-            );
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF0B73DA).withOpacity(0.22)
-                  : const Color(0xFFE8F1FF),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark ? const Color(0xFF2D3748) : const Color(0xFFE0E7FF),
-              ),
+        onTap: () => _openDynamicLinkInBrowser(context, dynamicLink.url),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF0B73DA).withOpacity(0.22)
+                : const Color(0xFFE8F1FF),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDark ? const Color(0xFF2D3748) : const Color(0xFFE0E7FF),
             ),
-            padding: const EdgeInsets.all(ShadCNTheme.space4),
-            child: Row(
-              children: [
-                // Icon
-                Icon(
-                  Icons.campaign,
-                  color: isDark
-                      ? const Color(0xFF60A5FA)
-                      : const Color(0xFF0B73DA),
-                  size: 28,
-                ),
-                const SizedBox(width: ShadCNTheme.space3),
-                // Label text
-                Expanded(
-                  child: Text(
-                    dynamicLink.title,
-                    style: TextStyle(
-                      color: isDark
-                          ? const Color(0xFFE5E7EB)
-                          : const Color(0xFF424242),
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+          ),
+          padding: const EdgeInsets.all(ShadCNTheme.space4),
+          child: Row(
+            children: [
+              Icon(
+                Icons.campaign,
+                color: isDark
+                    ? const Color(0xFF60A5FA)
+                    : const Color(0xFF0B73DA),
+                size: 28,
+              ),
+              const SizedBox(width: ShadCNTheme.space3),
+              Expanded(
+                child: Text(
+                  dynamicLink.title,
+                  style: TextStyle(
+                    color: isDark
+                        ? const Color(0xFFE5E7EB)
+                        : const Color(0xFF424242),
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                // Arrow icon
-                Icon(
-                  Icons.arrow_forward_ios,
-                  color: isDark
-                      ? const Color(0xFF60A5FA)
-                      : const Color(0xFF0B73DA),
-                  size: 16,
-                ),
-              ],
-            ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: isDark
+                    ? const Color(0xFF60A5FA)
+                    : const Color(0xFF0B73DA),
+                size: 16,
+              ),
+            ],
           ),
         ),
       ),
     );
+  }
+
+  /// Opens an announcement URL in the system browser.
+  Future<void> _openDynamicLinkInBrowser(BuildContext context, String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      if (mounted) {
+        _showLaunchError(context);
+      }
+      return;
+    }
+
+    try {
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched && mounted) {
+        _showLaunchError(context);
+      }
+    } catch (_) {
+      if (mounted) {
+        _showLaunchError(context);
+      }
+    }
   }
 }

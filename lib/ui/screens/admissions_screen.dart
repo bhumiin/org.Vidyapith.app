@@ -9,20 +9,18 @@ import '../theme/shadcn_theme.dart';
 import '../components/branded_app_bar.dart';
 import '../components/copyright_widget.dart';
 
-/// Admissions Screen - This screen displays all admissions information and forms for Vidyapith.
-/// 
+/// Admissions Screen - Displays admissions information scraped from the website.
+///
 /// What this screen does:
-/// - Shows information about new admissions
-/// - Displays Kindergarten admissions information with a link to the KG inquiry form
-/// - Shows Grades 1-5 admissions information with a link to the alternate route inquiry form
-/// - Displays the admissions policy
+/// - Mirrors the website layout: I. / II. / III. each on its own line
+/// - Preserves bold and underline emphasis from the site (without maroon color)
+/// - Shows optional inquiry form buttons when URLs are available
 /// - Shows the contact address for admissions inquiries
-/// - Fetches all admissions information from the Vidyapith website automatically
-/// 
+/// - Fetches admissions information from the Vidyapith website automatically
+///
 /// How users interact with it:
-/// - Scroll through all admissions sections
-/// - Tap form buttons (e.g., "2026-27 KG INQUIRY FORM") to open registration forms in a browser
-/// - View detailed admissions information for different grade levels
+/// - Scroll through the admissions notice and address
+/// - Tap form buttons (when present) to open registration forms in a browser
 /// - Pull down to refresh and get the latest admissions information
 class AdmissionsScreen extends StatefulWidget {
   const AdmissionsScreen({super.key});
@@ -141,7 +139,7 @@ class _AdmissionsScreenState extends State<AdmissionsScreen> {
     }
 
     final AdmissionsContent? content = _content;
-    if (content == null) {
+    if (content == null || (!content.hasBody && content.addressLines.isEmpty)) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -158,36 +156,8 @@ class _AdmissionsScreenState extends State<AdmissionsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (content.sectionI != null && content.sectionI!.isNotEmpty) ...[
-          _buildSectionCard(context, 'New Admissions', content.sectionI!),
-          const SizedBox(height: ShadCNTheme.space3),
-        ],
-        if (content.sectionII != null && content.sectionII!.isNotEmpty) ...[
-          _buildSectionCard(
-            context,
-            'Kindergarten Admissions',
-            content.sectionII!,
-            formUrl: content.kgFormUrl,
-            formButtonText: '2026-27 KG INQUIRY FORM',
-          ),
-          const SizedBox(height: ShadCNTheme.space3),
-        ],
-        if (content.sectionIII != null && content.sectionIII!.isNotEmpty) ...[
-          _buildSectionCard(
-            context,
-            'Grades 1-5 Admissions',
-            content.sectionIII!,
-            formUrl: content.alternateRouteFormUrl,
-            formButtonText: '2026-27 Alternate Route Inquiry Form',
-          ),
-          const SizedBox(height: ShadCNTheme.space3),
-        ],
-        if (content.sectionIV != null && content.sectionIV!.isNotEmpty) ...[
-          _buildSectionCard(
-            context,
-            'Admissions Policy',
-            content.sectionIV!,
-          ),
+        if (content.hasBody) ...[
+          _buildBodyCard(context, content),
           const SizedBox(height: ShadCNTheme.space3),
         ],
         if (content.addressLines.isNotEmpty) ...[
@@ -199,52 +169,76 @@ class _AdmissionsScreenState extends State<AdmissionsScreen> {
     );
   }
 
-  /// Builds a section card for admissions information.
-  /// Displays a title, content text, and optionally a form button.
-  /// Used for:
-  /// - New Admissions section
-  /// - Kindergarten Admissions (with KG form button)
-  /// - Grades 1-5 Admissions (with alternate route form button)
-  /// - Admissions Policy section
-  Widget _buildSectionCard(
-    BuildContext context,
-    String title,
-    String content, {
-    String? formUrl,
-    String? formButtonText,
-  }) {
+  /// Builds a single card mirroring the website admissions notice.
+  ///
+  /// Keeps I. / II. / III. as separate paragraphs and underlines key phrases,
+  /// but uses the same bodyMedium / muted description styling as other screens.
+  Widget _buildBodyCard(BuildContext context, AdmissionsContent content) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final titleStyle = theme.textTheme.titleLarge?.copyWith(
-      fontWeight: ShadCNTheme.fontBold,
-      color: isDark
-          ? ShadCNTheme.darkCardForeground
-          : ShadCNTheme.cardForeground,
-    );
-    final textStyle = theme.textTheme.bodyMedium?.copyWith(
+    final bodyColor = isDark
+        ? ShadCNTheme.darkMutedForeground
+        : ShadCNTheme.mutedForeground;
+    final baseStyle = theme.textTheme.bodyMedium?.copyWith(
       height: 1.5,
-      color: isDark
-          ? ShadCNTheme.darkCardForeground
-          : ShadCNTheme.cardForeground,
+      color: bodyColor,
+      fontWeight: FontWeight.normal,
     );
+
+    final children = <Widget>[];
+    for (var i = 0; i < content.paragraphs.length; i++) {
+      if (i > 0) {
+        children.add(const SizedBox(height: ShadCNTheme.space3));
+      }
+      children.add(
+        Text.rich(
+          TextSpan(
+            style: baseStyle,
+            children: [
+              for (final span in content.paragraphs[i].spans)
+                TextSpan(
+                  text: span.text,
+                  style: TextStyle(
+                    decoration: span.isUnderlined
+                        ? TextDecoration.underline
+                        : TextDecoration.none,
+                    decorationColor: bodyColor,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (content.kgFormUrl != null && content.kgFormUrl!.isNotEmpty) {
+      children.add(const SizedBox(height: ShadCNTheme.space4));
+      children.add(
+        ShadButton(
+          text: '2026-27 KG INQUIRY FORM',
+          fullWidth: true,
+          onPressed: () => _launchUrl(context, content.kgFormUrl!),
+        ),
+      );
+    }
+
+    if (content.alternateRouteFormUrl != null &&
+        content.alternateRouteFormUrl!.isNotEmpty) {
+      children.add(const SizedBox(height: ShadCNTheme.space3));
+      children.add(
+        ShadButton(
+          text: '2026-27 Alternate Route Inquiry Form',
+          fullWidth: true,
+          onPressed: () => _launchUrl(context, content.alternateRouteFormUrl!),
+        ),
+      );
+    }
 
     return ShadCard(
       padding: const EdgeInsets.all(ShadCNTheme.space4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: titleStyle),
-          const SizedBox(height: ShadCNTheme.space2),
-          Text(content, style: textStyle),
-          if (formUrl != null && formUrl.isNotEmpty && formButtonText != null) ...[
-            const SizedBox(height: ShadCNTheme.space3),
-            ShadButton(
-              text: formButtonText,
-              fullWidth: true,
-              onPressed: () => _launchUrl(context, formUrl),
-            ),
-          ],
-        ],
+        children: children,
       ),
     );
   }
@@ -336,4 +330,3 @@ class _AdmissionsScreenState extends State<AdmissionsScreen> {
     );
   }
 }
-

@@ -7,6 +7,169 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/website_content.dart';
 
+/// Weekday + optional second weekday + comma + month + day.
+///
+/// Used to find where each upcoming event starts inside a single text blob.
+final RegExp upcomingEventStartPattern = RegExp(
+  r'(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)'
+  r'(?:\s*&\s*(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday))?,'
+  r'\s*(?:January|February|March|April|May|June|July|August|September|October|November|December)'
+  r'\s+\d{1,2}',
+  caseSensitive: false,
+);
+
+const Map<String, int> _monthNameToNumber = {
+  'january': 1,
+  'february': 2,
+  'march': 3,
+  'april': 4,
+  'may': 5,
+  'june': 6,
+  'july': 7,
+  'august': 8,
+  'september': 9,
+  'october': 10,
+  'november': 11,
+  'december': 12,
+};
+
+/// Splits a single line/blob that may contain multiple events into entries.
+///
+/// Looks for boundaries matching [upcomingEventStartPattern] so titles that
+/// mention weekdays without a following month (e.g. "Saturday 6th") stay intact.
+List<String> splitUpcomingEventBlob(String text) {
+  final trimmed = text.trim();
+  if (trimmed.isEmpty) return const [];
+
+  final matches = upcomingEventStartPattern.allMatches(trimmed).toList();
+  if (matches.isEmpty) {
+    return [trimmed];
+  }
+  if (matches.length == 1 && matches.first.start == 0) {
+    return [trimmed];
+  }
+
+  final parts = <String>[];
+  for (var i = 0; i < matches.length; i++) {
+    final start = matches[i].start;
+    final end = i + 1 < matches.length ? matches[i + 1].start : trimmed.length;
+    final part = trimmed.substring(start, end).trim();
+    if (part.isNotEmpty) {
+      parts.add(part);
+    }
+  }
+  return parts.isEmpty ? [trimmed] : parts;
+}
+
+/// Expands collected lines so multi-event paragraphs become separate entries.
+List<String> expandUpcomingEventLines(List<String> lines) {
+  final expanded = <String>[];
+  for (final line in lines) {
+    expanded.addAll(splitUpcomingEventBlob(line));
+  }
+  return expanded;
+}
+
+/// Parses an event entry string into [UpcomingEvent].
+///
+/// Uses the first ` - ` as the details/title separator so titles may still
+/// contain additional dashes (e.g. anniversary notes).
+UpcomingEvent upcomingEventFromEntry(String entry) {
+  final separator = entry.indexOf(' - ');
+  if (separator < 0) {
+    return UpcomingEvent(title: entry.trim());
+  }
+  final details = entry.substring(0, separator).trim();
+  final title = entry.substring(separator + 3).trim();
+  return UpcomingEvent(
+    title: title,
+    details: details.isNotEmpty ? details : null,
+  );
+}
+
+/// Parses the calendar date (and optional start time) for sorting/filtering.
+///
+/// Returns null when no valid month/day can be found.
+DateTime? parseUpcomingEventSortDate(
+  UpcomingEvent event, {
+  DateTime? now,
+}) {
+  final reference = now ?? DateTime.now();
+  final currentYear = reference.year;
+  final currentMonth = reference.month;
+  final currentDay = reference.day;
+  final eventText = '${event.details ?? ''} ${event.title}'.toLowerCase();
+
+  final dateMatch = RegExp(
+    r'(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:\s*,\s*(\d{4}))?',
+    caseSensitive: false,
+  ).firstMatch(eventText);
+
+  if (dateMatch == null) return null;
+
+  final monthName = dateMatch.group(1)!.toLowerCase();
+  final day = int.tryParse(dateMatch.group(2) ?? '');
+  if (day == null || day < 1 || day > 31) return null;
+
+  final month = _monthNameToNumber[monthName];
+  if (month == null) return null;
+
+  final yearStr = dateMatch.group(3);
+  int year;
+  if (yearStr != null && yearStr.isNotEmpty) {
+    year = int.tryParse(yearStr) ?? currentYear;
+  } else {
+    year = currentYear;
+    if (month < currentMonth ||
+        (month == currentMonth && day < currentDay)) {
+      year = currentYear + 1;
+    }
+  }
+
+  var hour = 0;
+  var minute = 0;
+  final timeMatch = RegExp(
+    r'(\d{1,2}):(\d{2})\s*(am|pm)',
+    caseSensitive: false,
+  ).firstMatch(eventText);
+  if (timeMatch != null) {
+    var h = int.tryParse(timeMatch.group(1)!) ?? 0;
+    final m = int.tryParse(timeMatch.group(2)!) ?? 0;
+    final period = timeMatch.group(3)!.toLowerCase();
+    if (period == 'pm' && h < 12) h += 12;
+    if (period == 'am' && h == 12) h = 0;
+    hour = h;
+    minute = m;
+  }
+
+  try {
+    return DateTime(year, month, day, hour, minute);
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Filters past events and sorts remaining ones soonest-first.
+List<UpcomingEvent> filterAndSortUpcomingEvents(
+  Iterable<UpcomingEvent> events, {
+  DateTime? now,
+}) {
+  final reference = now ?? DateTime.now();
+  final today = DateTime(reference.year, reference.month, reference.day);
+
+  final dated = <({UpcomingEvent event, DateTime sortDate})>[];
+  for (final event in events) {
+    final sortDate = parseUpcomingEventSortDate(event, now: reference);
+    if (sortDate == null) continue;
+    final eventDay = DateTime(sortDate.year, sortDate.month, sortDate.day);
+    if (eventDay.isBefore(today)) continue;
+    dated.add((event: event, sortDate: sortDate));
+  }
+
+  dated.sort((a, b) => a.sortDate.compareTo(b.sortDate));
+  return dated.map((e) => e.event).toList(growable: false);
+}
+
 /// Service that scrapes (extracts) content from the Vidyapith website.
 /// 
 /// Web scraping means downloading HTML pages and extracting specific information
@@ -74,29 +237,39 @@ class WebsiteScraper {
   static const String _contactUrl =
       'https://www.vidyapith.org/contact-us1.html';
 
+  /// URL for the archives page
+  static const String _archivesUrl =
+      'https://www.vidyapith.org/archives.html';
+
   // ============================================================================
   // CONSTANTS - Cache Keys
   // ============================================================================
   // These keys identify where we store cached data in local storage (SharedPreferences).
   // Each content type has its own cache key so they can be stored separately.
   
-  /// Cache key for homepage content (thought of the day, events, images)
-  static const String _cacheKey = 'website_content_cache_v1';
+  /// Cache key for homepage content (thought of the day, events, images).
+  /// v5 invalidates caches that stored upcoming events as a single merged entry.
+  static const String _cacheKey = 'website_content_cache_v5';
   
   /// Cache key for events page content
   static const String _eventsCacheKey = 'events_content_cache_v1';
   
-  /// Cache key for bookstore content
-  static const String _bookstoreCacheKey = 'bookstore_content_cache_v1';
+  /// Cache key for bookstore content.
+  /// v2 invalidates caches that flattened `<br>` breaks and missed Cloudflare emails.
+  static const String _bookstoreCacheKey = 'bookstore_content_cache_v2';
   
-  /// Cache key for donation content
-  static const String _donateCacheKey = 'donate_content_cache_v1';
+  /// Cache key for donation content.
+  /// v2: full method list (securities, recurring) and list-based scrape.
+  static const String _donateCacheKey = 'donate_content_cache_v2';
   
-  /// Cache key for admissions content (v2 indicates this is version 2)
-  static const String _admissionsCacheKey = 'admissions_content_cache_v2';
+  /// Cache key for admissions content (v3: rich paragraphs with bold/underline)
+  static const String _admissionsCacheKey = 'admissions_content_cache_v3';
   
   /// Cache key for contact content
   static const String _contactCacheKey = 'contact_content_cache_v1';
+
+  /// Cache key for archives content
+  static const String _archivesCacheKey = 'archives_content_cache_v1';
 
   // ============================================================================
   // CONSTANTS - Cache Durations
@@ -121,6 +294,9 @@ class WebsiteScraper {
   
   /// How long contact content cache is valid (24 hours)
   static const Duration _contactCacheDuration = Duration(hours: 24);
+
+  /// How long archives content cache is valid (24 hours)
+  static const Duration _archivesCacheDuration = Duration(hours: 24);
 
   // ============================================================================
   // CONSTANTS - Other
@@ -214,6 +390,7 @@ class WebsiteScraper {
   /// 
   /// Downloads the homepage HTML, parses it, and extracts:
   /// - Thought of the day
+  /// - Featured quote (above Thought of the Day)
   /// - Upcoming events
   /// - Carousel images
   /// 
@@ -235,19 +412,26 @@ class WebsiteScraper {
     // utf8.decode converts the raw bytes to text, handling special characters
     final document = html_parser.parse(utf8.decode(response.bodyBytes));
 
-    // Extract different parts of the content using helper methods
+    return parseHomepageDocument(document);
+  }
+
+  /// Parses a homepage HTML [document] into [WebsiteContent].
+  ///
+  /// Exposed for unit tests so fixture HTML can be verified without HTTP.
+  WebsiteContent parseHomepageDocument(Document document) {
     final thought = _parseThoughtOfTheDay(document);
+    final featuredQuote = _parseFeaturedQuote(document);
     final events = _parseUpcomingEvents(document);
     final carouselImages = _parseCarouselImages(document);
-    final dynamicLink = _parseDynamicLink(document);
+    final dynamicLinks = _parseDynamicLinks(document);
 
-    // Combine everything into a WebsiteContent object
     return WebsiteContent(
       thoughtOfTheDay: thought,
+      featuredQuote: featuredQuote,
       upcomingEvents: events,
       carouselImages: carouselImages,
-      dynamicLink: dynamicLink,
-      fetchedAt: DateTime.now(), // Record when we fetched this data
+      dynamicLinks: dynamicLinks,
+      fetchedAt: DateTime.now(),
     );
   }
 
@@ -306,26 +490,164 @@ class WebsiteScraper {
 
   DonateContent _parseDonateContent(Document document, Uri baseUri) {
     final List<String> introParagraphs = _extractDonateIntro(document);
+
+    String? zelleEmail;
+    String? zelleInstruction;
+    String? zelleQrImageUrl;
+    String? securitiesInstruction;
+    String? securitiesEmail;
+    String? checkInstruction;
+    List<String> checkMailingAddress = [];
+    String? paypalGivingInstruction;
+    String? paypalGivingUrl;
+    String? paypalGivingNote;
+    String? recurringInstruction;
+    String? recurringUrl;
+    String? matchingGrantInstruction;
+    String? matchingFormUrl;
+
+    Element? zelleListItem;
+    Element? checkListItem;
+
+    for (final Element li in document.querySelectorAll('li')) {
+      final String text = _cleanHtml(li.innerHtml).trim();
+      if (text.isEmpty) {
+        continue;
+      }
+      final String lowered = text.toLowerCase();
+
+      if (lowered.contains('zelle')) {
+        zelleListItem = li;
+        zelleInstruction ??= text;
+        zelleEmail ??= _firstEmailIn(li);
+        continue;
+      }
+
+      if (lowered.contains('securities') ||
+          lowered.contains('appreciated financial')) {
+        securitiesInstruction ??= text;
+        securitiesEmail ??= _firstEmailIn(li);
+        continue;
+      }
+
+      if (lowered.contains('matching') && lowered.contains('grant')) {
+        matchingGrantInstruction ??= text;
+        matchingFormUrl ??= _firstHrefMatching(
+          li,
+          baseUri,
+          (href) => href.toLowerCase().contains('docs.google.com/forms'),
+        );
+        continue;
+      }
+
+      if (lowered.contains('recurring') ||
+          (lowered.contains('monthly donation') &&
+              !lowered.contains('paypal giving'))) {
+        recurringInstruction ??= text;
+        recurringUrl ??= _firstHrefMatching(
+          li,
+          baseUri,
+          (href) {
+            final lower = href.toLowerCase();
+            return lower.contains('paypal.com') &&
+                (lower.contains('donate') || lower.contains('hosted_button'));
+          },
+        );
+        continue;
+      }
+
+      if (lowered.contains('paypal giving fund')) {
+        if (lowered.startsWith('please note')) {
+          paypalGivingNote ??= text;
+        } else {
+          paypalGivingInstruction ??= text;
+        }
+        paypalGivingUrl ??= _firstHrefMatching(
+          li,
+          baseUri,
+          (href) {
+            final lower = href.toLowerCase();
+            return lower.contains('paypal.com') &&
+                (lower.contains('fundraiser') || lower.contains('giving'));
+          },
+        );
+        continue;
+      }
+
+      if (lowered.contains('donate by') && lowered.contains('check')) {
+        checkListItem = li;
+        checkInstruction ??= text;
+        continue;
+      }
+    }
+
+    // Legacy table-cell fallback when list items are absent.
+    if (zelleInstruction == null &&
+        securitiesInstruction == null &&
+        matchingGrantInstruction == null &&
+        recurringInstruction == null &&
+        paypalGivingInstruction == null &&
+        checkInstruction == null) {
+      return _parseDonateContentLegacy(document, baseUri, introParagraphs);
+    }
+
+    zelleQrImageUrl = _extractZelleQrImageUrl(document, baseUri, zelleListItem);
+
+    if (checkListItem != null) {
+      checkMailingAddress = _extractCheckAddressNear(checkListItem);
+    }
+
+    // Prefer same org email for securities when decode fails on one anchor.
+    securitiesEmail ??= zelleEmail;
+    zelleEmail ??= securitiesEmail;
+
+    final List<String> mailingAddress = checkMailingAddress.isNotEmpty
+        ? checkMailingAddress
+        : _fallbackDonateAddress;
+
+    return DonateContent(
+      introParagraphs: introParagraphs,
+      zelleEmail: zelleEmail,
+      zelleInstruction: zelleInstruction,
+      zelleQrImageUrl: zelleQrImageUrl,
+      securitiesInstruction: securitiesInstruction,
+      securitiesEmail: securitiesEmail,
+      checkInstruction: checkInstruction,
+      checkMailingAddress: mailingAddress,
+      paypalGivingInstruction: paypalGivingInstruction,
+      paypalGivingUrl: paypalGivingUrl,
+      paypalGivingNote: paypalGivingNote,
+      recurringInstruction: recurringInstruction,
+      recurringUrl: recurringUrl,
+      matchingGrantInstruction: matchingGrantInstruction,
+      matchingFormUrl: matchingFormUrl,
+      fetchedAt: DateTime.now(),
+    );
+  }
+
+  /// Legacy table-based donate parse used when the page has no method list items.
+  DonateContent _parseDonateContentLegacy(
+    Document document,
+    Uri baseUri,
+    List<String> introParagraphs,
+  ) {
     final (
       String? email,
       String? instruction,
       String? qrImageUrl
-    ) zelleInfo = _extractZelleInfo(document, baseUri);
+    ) zelleInfo = _extractZelleInfoLegacy(document, baseUri);
     final (
       String? checkInstruction,
       List<String> addressLines,
       String? paypalInstruction,
       String? paypalUrl,
       String? paypalNote,
-      String? creditCardInstruction,
-      String? creditCardUrl,
-      String? creditCardNote,
       String? matchingInstruction,
-      String? matchingUrl
-    ) methodsInfo = _extractOtherDonateInfo(document, baseUri);
+      String? matchingUrl,
+    ) = _extractOtherDonateInfoLegacy(document, baseUri);
 
-    final List<String> mailingAddress = methodsInfo.$2.isNotEmpty
-        ? methodsInfo.$2
+    final List<String> mailingAddress = addressLines.isNotEmpty
+        ? addressLines
         : _fallbackDonateAddress;
 
     return DonateContent(
@@ -333,16 +655,13 @@ class WebsiteScraper {
       zelleEmail: zelleInfo.$1,
       zelleInstruction: zelleInfo.$2,
       zelleQrImageUrl: zelleInfo.$3,
-      checkInstruction: methodsInfo.$1,
+      checkInstruction: checkInstruction,
       checkMailingAddress: mailingAddress,
-      paypalGivingInstruction: methodsInfo.$3,
-      paypalGivingUrl: methodsInfo.$4,
-      paypalGivingNote: methodsInfo.$5,
-      creditCardInstruction: methodsInfo.$6,
-      creditCardUrl: methodsInfo.$7,
-      creditCardNote: methodsInfo.$8,
-      matchingGrantInstruction: methodsInfo.$9,
-      matchingFormUrl: methodsInfo.$10,
+      paypalGivingInstruction: paypalInstruction,
+      paypalGivingUrl: paypalUrl,
+      paypalGivingNote: paypalNote,
+      matchingGrantInstruction: matchingInstruction,
+      matchingFormUrl: matchingUrl,
       fetchedAt: DateTime.now(),
     );
   }
@@ -352,7 +671,9 @@ class WebsiteScraper {
       final text = _cleanHtml(element.innerHtml);
       final lowered = text.toLowerCase();
       if (lowered.contains('vivekananda vidyapith relies') ||
-          lowered.contains('donations') && text.trim().isNotEmpty) {
+          (lowered.contains('donations') &&
+              lowered.contains('501') &&
+              text.trim().isNotEmpty)) {
         final lines = text
             .split(RegExp(r'\n+'))
             .map((line) => line.trim())
@@ -366,11 +687,149 @@ class WebsiteScraper {
     return const [];
   }
 
+  String? _firstEmailIn(Element root) {
+    for (final anchor in root.querySelectorAll('a')) {
+      final String? email = _extractEmailFromAnchor(anchor);
+      if (email != null && email.isNotEmpty) {
+        return email;
+      }
+    }
+    return null;
+  }
+
+  String? _firstHrefMatching(
+    Element root,
+    Uri baseUri,
+    bool Function(String href) predicate,
+  ) {
+    for (final anchor in root.querySelectorAll('a')) {
+      final String? href = anchor.attributes['href'];
+      if (href == null || href.isEmpty) {
+        continue;
+      }
+      final String? resolved = _resolveHref(href, baseUri);
+      if (resolved == null || resolved.isEmpty) {
+        continue;
+      }
+      if (predicate(resolved)) {
+        return resolved;
+      }
+    }
+    return null;
+  }
+
+  String? _extractZelleQrImageUrl(
+    Document document,
+    Uri baseUri,
+    Element? zelleListItem,
+  ) {
+    Element? searchRoot = zelleListItem;
+    while (searchRoot != null &&
+        searchRoot.localName != 'td' &&
+        searchRoot.localName != 'body') {
+      searchRoot = searchRoot.parent;
+    }
+    searchRoot ??= document.body;
+
+    if (searchRoot != null) {
+      for (final Element image in searchRoot.querySelectorAll('img')) {
+        final String? url = _resolveImageUrlWithBase(image, baseUri);
+        if (url != null && url.isNotEmpty) {
+          return url;
+        }
+      }
+    }
+
+    // Fallback: first content image after the donate heading.
+    for (final Element image in document.querySelectorAll(
+      '.wsite-image img, #wsite-content img',
+    )) {
+      final String? url = _resolveImageUrlWithBase(image, baseUri);
+      if (url != null && url.isNotEmpty) {
+        return url;
+      }
+    }
+    return null;
+  }
+
+  List<String> _extractCheckAddressNear(Element checkListItem) {
+    Element? container = checkListItem.parent;
+    while (container != null) {
+      final bool isParagraph = container.localName == 'div' &&
+          container.classes.contains('paragraph');
+      if (isParagraph || container.localName == 'td') {
+        break;
+      }
+      container = container.parent;
+    }
+    container ??= checkListItem.parent;
+
+    if (container == null) {
+      return const [];
+    }
+
+    final List<String> lines = [];
+    for (final Element span in container.querySelectorAll('span')) {
+      final String text =
+          _cleanHtml(span.innerHtml).replaceAll(RegExp(r'\s+'), ' ').trim();
+      if (text.isEmpty || text.length > 80) {
+        continue;
+      }
+      final String lowered = text.toLowerCase();
+      if (lowered.contains('donate by') ||
+          lowered.contains('please mail') ||
+          lowered.contains('please note') ||
+          lowered.contains('click')) {
+        continue;
+      }
+      if (lowered.contains('vivekananda vidyapith') ||
+          RegExp(r'\d').hasMatch(text) ||
+          lowered.contains('avenue') ||
+          lowered.contains('street') ||
+          lowered.contains('wayne') ||
+          lowered.contains('nj')) {
+        lines.add(text);
+      }
+    }
+
+    if (lines.length >= 2) {
+      return lines;
+    }
+
+    // Fallback: split cleaned container text after the org name when it
+    // looks like a mailing address (street / city / ZIP).
+    final String cleaned = _cleanHtml(container.innerHtml);
+    final Match? match = RegExp(
+      r'vivekananda\s+vidyapith\s+(.+)$',
+      caseSensitive: false,
+    ).firstMatch(cleaned);
+    if (match != null) {
+      final String rest = (match.group(1) ?? '').trim();
+      final String restLower = rest.toLowerCase();
+      final bool looksLikeAddress = RegExp(r'\d').hasMatch(rest) &&
+          (restLower.contains('avenue') ||
+              restLower.contains('street') ||
+              restLower.contains('wayne') ||
+              restLower.contains('nj') ||
+              RegExp(r'\b\d{5}\b').hasMatch(rest));
+      if (looksLikeAddress) {
+        return [
+          'Vivekananda Vidyapith',
+          ...rest
+              .split(RegExp(r'\s{2,}|\n+'))
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty && e.length < 80),
+        ];
+      }
+    }
+    return const [];
+  }
+
   (
     String?,
     String?,
     String?,
-  ) _extractZelleInfo(Document document, Uri baseUri) {
+  ) _extractZelleInfoLegacy(Document document, Uri baseUri) {
     Element? zelleCell;
     for (final td in document.querySelectorAll('table tr td')) {
       final text = _cleanHtml(td.innerHtml).toLowerCase();
@@ -424,10 +883,7 @@ class WebsiteScraper {
     String?,
     String?,
     String?,
-    String?,
-    String?,
-    String?,
-  ) _extractOtherDonateInfo(Document document, Uri baseUri) {
+  ) _extractOtherDonateInfoLegacy(Document document, Uri baseUri) {
     Element? donationCell;
     for (final td in document.querySelectorAll('table tr td')) {
       final text = _cleanHtml(td.innerHtml).toLowerCase();
@@ -441,7 +897,7 @@ class WebsiteScraper {
     }
 
     if (donationCell == null) {
-      return (null, const [], null, null, null, null, null, null, null, null);
+      return (null, const [], null, null, null, null, null);
     }
 
     String? checkInstruction;
@@ -449,9 +905,6 @@ class WebsiteScraper {
     String? paypalInstruction;
     String? paypalUrl;
     String? paypalNote;
-    String? creditCardInstruction;
-    String? creditCardUrl;
-    String? creditCardNote;
     String? matchingInstruction;
     String? matchingUrl;
 
@@ -476,7 +929,8 @@ class WebsiteScraper {
         final bool isNextSection = lowered.startsWith('to donate online') ||
             lowered.startsWith('to donate by credit card') ||
             lowered.startsWith('if your company') ||
-            lowered.startsWith('please note');
+            lowered.startsWith('please note') ||
+            lowered.startsWith('to make a');
         if (isNextSection) {
           captureAddress = false;
         } else {
@@ -490,12 +944,6 @@ class WebsiteScraper {
           paypalNote ??= line;
         } else {
           paypalInstruction ??= line;
-        }
-      } else if (lowered.contains('credit card')) {
-        if (lowered.startsWith('please note')) {
-          creditCardNote ??= line;
-        } else {
-          creditCardInstruction ??= line;
         }
       } else if (lowered.contains('matching') && lowered.contains('grant')) {
         matchingInstruction ??= line;
@@ -517,9 +965,6 @@ class WebsiteScraper {
       if (loweredHref.contains('paypal.com') &&
           loweredHref.contains('fundraiser')) {
         paypalUrl ??= resolved;
-      } else if (loweredHref.contains('paypal.com') &&
-          loweredHref.contains('donate')) {
-        creditCardUrl ??= resolved;
       } else if (loweredHref.contains('docs.google.com/forms')) {
         matchingUrl ??= resolved;
       }
@@ -536,9 +981,6 @@ class WebsiteScraper {
       paypalInstruction,
       paypalUrl,
       paypalNote,
-      creditCardInstruction,
-      creditCardUrl,
-      creditCardNote,
       matchingInstruction,
       matchingUrl,
     );
@@ -624,9 +1066,19 @@ class WebsiteScraper {
     return resolved.toString();
   }
 
-  Future<CurricularClassesContent> fetchCurricularClassesContent({
-    String? thumbnailOverride,
-  }) async {
+  /// Fallback image for youngsters curricular section when scrape fails.
+  static const String _curricularYoungstersFallbackImageUrl =
+      'https://www.vidyapith.org/uploads/5/2/1/3/52135817/published/1254951.jpg?1766496217';
+
+  /// Fallback image for adults curricular section when scrape fails.
+  static const String _curricularAdultsFallbackImageUrl =
+      'https://www.vidyapith.org/uploads/5/2/1/3/52135817/6185815.jpeg';
+
+  /// Fetches curricular classes content (youngsters + adults) from the website.
+  ///
+  /// Each section includes the exact heading title, the full paragraph body as
+  /// [CurricularClassesSection.description], and the paired multicol image.
+  Future<CurricularClassesContent> fetchCurricularClassesContent() async {
     final uri = Uri.parse(_curricularClassesUrl);
     final response = await _client.get(uri);
 
@@ -643,24 +1095,22 @@ class WebsiteScraper {
         _extractCurricularSection(
           document,
           match: (text) => text.contains('youngsters'),
+          fallbackImageUrl: _curricularYoungstersFallbackImageUrl,
         );
 
     final CurricularClassesSection? adultsSection = _extractCurricularSection(
       document,
       match: (text) => text.contains('adults'),
+      fallbackImageUrl: _curricularAdultsFallbackImageUrl,
     );
 
     if (youngstersSection == null || adultsSection == null) {
       throw StateError('Unable to parse curricular classes sections.');
     }
 
-    final String thumbnailUrl =
-        thumbnailOverride ?? _extractCurricularThumbnail(document) ?? '';
-
     return CurricularClassesContent(
       youngstersSection: youngstersSection,
       adultsSection: adultsSection,
-      thumbnailUrl: thumbnailUrl,
     );
   }
 
@@ -704,129 +1154,252 @@ class WebsiteScraper {
     );
   }
 
+  /// Extracts one music class section (vocal or tabla) from the page.
+  ///
+  /// Titles come from the matching heading/`<strong>` only. Teachers, schedule,
+  /// and description are parsed from the following paragraph with `<br>` treated
+  /// as line breaks so fields do not collapse into duplicated blobs. Inquiry
+  /// CTA wording is omitted from text fields; use [MusicClassSection.formUrl].
   MusicClassSection? _extractMusicSection(
     Document document, {
     required bool Function(String loweredText) match,
   }) {
-    Element? targetTd;
-
-    // First try to find by strong tag
-    for (final strong in document.querySelectorAll('strong')) {
-      final text = _cleanHtml(strong.innerHtml).toLowerCase();
-      if (match(text)) {
-        targetTd = _findParentTd(strong);
-        break;
-      }
-    }
-
-    // If not found, search all table cells
-    if (targetTd == null) {
-      for (final td in document.querySelectorAll('table tr td')) {
-        final text = _cleanHtml(td.innerHtml).toLowerCase();
-        if (match(text)) {
-          targetTd = td;
-          break;
-        }
-      }
-    }
-
-    if (targetTd == null || targetTd.localName != 'td') {
+    final Element? titleElement = _findMusicClassTitleElement(document, match);
+    if (titleElement == null) {
       return null;
     }
 
-    // Extract form URL from anchor tag if present
-    String? formUrl;
-    final anchor =
-        targetTd.querySelector('a[href*="docs.google.com"]') ??
-        targetTd.querySelector('a');
-    if (anchor != null) {
-      formUrl = anchor.attributes['href'];
-      if (formUrl != null && !formUrl.startsWith('http')) {
-        formUrl = 'https://www.vidyapith.org$formUrl';
-      }
-    }
-
-    final cleaned = _cleanHtml(targetTd.innerHtml);
-    final lines = cleaned
-        .split('\n')
-        .map((line) => line.trim())
-        .where((line) => line.isNotEmpty)
-        .toList();
-
-    if (lines.isEmpty) {
+    final String title = _cleanHtml(titleElement.innerHtml);
+    if (title.isEmpty) {
       return null;
     }
 
-    String title = '';
+    Element heading = titleElement;
+    while (heading.parent != null && heading.localName != 'h2') {
+      heading = heading.parent!;
+    }
+
+    final Element? bodyElement = _findMusicSectionBody(heading);
+    final String? formUrl = _extractMusicFormUrl(bodyElement);
+    final List<String> bodyLines = bodyElement != null
+        ? _musicSectionLines(bodyElement.innerHtml)
+        : const <String>[];
+
     String teachers = '';
     String schedule = '';
-    String description = '';
+    final List<String> descriptionLines = <String>[];
 
-    // Find title - usually the first line or contains the class type
-    for (final line in lines) {
-      final lower = line.toLowerCase();
-      if (match(lower) && title.isEmpty) {
-        title = line;
-        break;
+    for (final String line in bodyLines) {
+      final String lower = line.toLowerCase();
+
+      if (_isMusicInquiryCtaLine(lower)) {
+        continue;
       }
-    }
 
-    // If title not found, use first line
-    if (title.isEmpty) {
-      title = lines.first;
-    }
-
-    // Extract teachers (usually contains "Taught by")
-    for (final line in lines) {
-      final lower = line.toLowerCase();
-      if (lower.contains('taught by')) {
-        teachers = line
-            .replaceAll(RegExp(r'^.*?taught by', caseSensitive: false), '')
-            .trim();
-        break;
+      if (teachers.isEmpty && lower.contains('taught by')) {
+        teachers = _extractTeachersFromLine(line);
+        // Same line may also carry the schedule after the teachers clause.
+        final String? inlineSchedule = _extractScheduleFromLine(line);
+        if (inlineSchedule != null && schedule.isEmpty) {
+          schedule = inlineSchedule;
+        }
+        continue;
       }
-    }
 
-    // Extract schedule (usually contains day and time)
-    for (final line in lines) {
-      final lower = line.toLowerCase();
-      if ((lower.contains('saturday') ||
-              lower.contains('sunday') ||
-              lower.contains('monday') ||
-              lower.contains('tuesday') ||
-              lower.contains('wednesday') ||
-              lower.contains('thursday') ||
-              lower.contains('friday')) &&
-          (lower.contains('pm') ||
-              lower.contains('am') ||
-              lower.contains(':') ||
-              lower.contains('time'))) {
-        schedule = line;
-        break;
+      if (schedule.isEmpty) {
+        final String? scheduleOnly = _extractScheduleFromLine(line);
+        if (scheduleOnly != null && !_looksLikeTaughtByLine(lower)) {
+          schedule = scheduleOnly;
+          continue;
+        }
       }
-    }
 
-    // Remaining text goes to description
-    final descriptionLines = <String>[];
-    for (final line in lines) {
-      final lower = line.toLowerCase();
       if (line != title &&
-          !lower.contains('taught by') &&
-          !lower.contains('inquiry form') &&
-          !lower.contains('submit') &&
-          schedule != line) {
+          !_looksLikeTaughtByLine(lower) &&
+          !_isMusicScheduleLine(lower)) {
         descriptionLines.add(line);
       }
     }
-    description = descriptionLines.join(' ').trim();
+
+    final String description = descriptionLines.join(' ').trim();
 
     return MusicClassSection(
       title: title,
-      teachers: teachers.isEmpty ? '' : teachers,
-      schedule: schedule.isEmpty ? '' : schedule,
-      description: description.isEmpty ? '' : description,
+      teachers: teachers,
+      schedule: schedule,
+      description: description,
       formUrl: formUrl,
     );
+  }
+
+  /// Finds the heading/`<strong>` whose text matches the vocal or tabla section.
+  Element? _findMusicClassTitleElement(
+    Document document,
+    bool Function(String loweredText) match,
+  ) {
+    for (final Element strong in document.querySelectorAll('strong')) {
+      final String text = _cleanHtml(strong.innerHtml).toLowerCase();
+      if (match(text) && _isMusicClassTitleCandidate(text)) {
+        return strong;
+      }
+    }
+
+    for (final Element heading in document.querySelectorAll('h2')) {
+      final String text = _cleanHtml(heading.innerHtml).toLowerCase();
+      if (match(text) && _isMusicClassTitleCandidate(text)) {
+        return heading;
+      }
+    }
+
+    return null;
+  }
+
+  /// True when [lowered] looks like a class title rather than schedule or form CTA.
+  bool _isMusicClassTitleCandidate(String lowered) {
+    if (_isMusicInquiryCtaLine(lowered)) {
+      return false;
+    }
+    if (_isMusicScheduleLine(lowered) && !lowered.contains('class')) {
+      return false;
+    }
+    return true;
+  }
+
+  /// Returns the paragraph (or first content sibling) after [heading].
+  Element? _findMusicSectionBody(Element heading) {
+    Element? current = heading.nextElementSibling;
+    while (current != null) {
+      final String tag = current.localName?.toLowerCase() ?? '';
+      if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].contains(tag)) {
+        break;
+      }
+
+      final String className = current.className.toLowerCase();
+      if (tag == 'div' && className.contains('paragraph')) {
+        return current;
+      }
+      if (tag == 'p') {
+        return current;
+      }
+
+      final String text = _cleanHtml(current.innerHtml).toLowerCase();
+      if (text.contains('taught by') || _isMusicScheduleLine(text)) {
+        return current;
+      }
+
+      current = current.nextElementSibling;
+    }
+    return null;
+  }
+
+  /// Resolves the Google Form (or first anchor) URL inside [bodyElement].
+  String? _extractMusicFormUrl(Element? bodyElement) {
+    if (bodyElement == null) {
+      return null;
+    }
+
+    final Element? anchor =
+        bodyElement.querySelector('a[href*="docs.google.com"]') ??
+        bodyElement.querySelector('a');
+    if (anchor == null) {
+      return null;
+    }
+
+    String? formUrl = anchor.attributes['href'];
+    if (formUrl != null && !formUrl.startsWith('http')) {
+      formUrl = 'https://www.vidyapith.org$formUrl';
+    }
+    return formUrl;
+  }
+
+  /// Splits music section HTML into non-empty lines, preserving `<br>` breaks.
+  ///
+  /// Source whitespace/newlines between tags are collapsed so inquiry CTA markup
+  /// does not produce stray punctuation-only lines.
+  List<String> _musicSectionLines(String html) {
+    const String breakSentinel = '\uE000';
+    final String withSentinel = html.replaceAll(
+      RegExp(r'(<br\s*/?>)+', caseSensitive: false),
+      breakSentinel,
+    );
+    final fragment = html_parser.parseFragment(withSentinel);
+    final String text = (fragment.text ?? '')
+        .replaceAll('\u00A0', ' ')
+        .replaceAll('\u200B', '')
+        .replaceAll(RegExp(r'[\r\n]+'), ' ')
+        .replaceAll(breakSentinel, '\n');
+
+    return text
+        .split('\n')
+        .map((line) => line.replaceAll(RegExp(r'\s+'), ' ').trim())
+        .where((line) => line.isNotEmpty)
+        .where((line) => !RegExp(r'^[\.,;:!?\-–—]+$').hasMatch(line))
+        .toList();
+  }
+
+  /// Names only from a "Taught by …" line (schedule/inquiry fragments stripped).
+  String _extractTeachersFromLine(String line) {
+    String teachers = line
+        .replaceFirst(RegExp(r'^.*?taught by\s*', caseSensitive: false), '')
+        .trim();
+
+    teachers = teachers
+        .replaceFirst(
+          RegExp(
+            r'\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday).*$',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .trim();
+    teachers = teachers
+        .replaceFirst(
+          RegExp(r'\s*to inquire further.*$', caseSensitive: false),
+          '',
+        )
+        .trim();
+
+    return teachers;
+  }
+
+  /// Day/time segment from [line], or null if none.
+  String? _extractScheduleFromLine(String line) {
+    final Match? match = RegExp(
+      r'((?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)s?\b.*?(?:\d{1,2}:\d{2}\s*(?:am|pm)|\d{1,2}\s*(?:am|pm)))',
+      caseSensitive: false,
+    ).firstMatch(line);
+    if (match == null) {
+      return null;
+    }
+    return match.group(1)!.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  bool _looksLikeTaughtByLine(String lowered) => lowered.contains('taught by');
+
+  bool _isMusicScheduleLine(String lowered) {
+    final bool hasDay =
+        lowered.contains('saturday') ||
+        lowered.contains('sunday') ||
+        lowered.contains('monday') ||
+        lowered.contains('tuesday') ||
+        lowered.contains('wednesday') ||
+        lowered.contains('thursday') ||
+        lowered.contains('friday');
+    final bool hasTime =
+        lowered.contains('am') ||
+        lowered.contains('pm') ||
+        RegExp(r'\d{1,2}:\d{2}').hasMatch(lowered);
+    return hasDay && hasTime;
+  }
+
+  bool _isMusicInquiryCtaLine(String lowered) {
+    return lowered.contains('inquire') ||
+        lowered.contains('inquiry') ||
+        lowered.contains('submit this') ||
+        (lowered.contains('form') &&
+            (lowered.contains('vocal') ||
+                lowered.contains('tabla') ||
+                lowered.contains('class')));
   }
 
   Future<SummerCampContent> fetchSummerCampContent() async {
@@ -853,74 +1426,63 @@ class WebsiteScraper {
     );
   }
 
+  /// Extracts the summer camp description from the Weebly page.
+  ///
+  /// Prefers `#wsite-content .paragraph` / `.paragraph` text, then table cells.
+  /// Strips a leading "Summer Camp" heading from the cleaned single-line string
+  /// (since [_cleanHtml] collapses `<br>` / newlines into spaces).
   String _extractSummerCampDescription(Document document) {
-    // Look for table cells containing "summer camp" text
-    for (final td in document.querySelectorAll('table tr td')) {
-      final text = _cleanHtml(td.innerHtml).toLowerCase();
-      if (text.contains('summer camp') && text.contains('invigorating')) {
-        final cleaned = _cleanHtml(td.innerHtml);
-        final lines = cleaned
-            .split('\n')
-            .map((line) => line.trim())
-            .where((line) => line.isNotEmpty)
-            .toList();
-
-        // Find the description text (after "Summer Camp" title)
-        String description = '';
-        bool foundTitle = false;
-
-        for (final line in lines) {
-          final lower = line.toLowerCase();
-          if (lower.contains('summer camp') && !foundTitle) {
-            foundTitle = true;
-            // Skip the title line, get the description
-            continue;
-          }
-          if (foundTitle && line.isNotEmpty) {
-            if (description.isNotEmpty) {
-              description += ' $line';
-            } else {
-              description = line;
-            }
-          }
-        }
-
-        if (description.isNotEmpty) {
-          return description;
+    for (final selector in ['#wsite-content .paragraph', '.paragraph']) {
+      for (final element in document.querySelectorAll(selector)) {
+        final body = _summerCampBodyFromCleanedText(
+          _cleanHtml(element.innerHtml),
+        );
+        if (body != null) {
+          return body;
         }
       }
     }
 
-    // Fallback: try to find any table cell with substantial text
     for (final td in document.querySelectorAll('table tr td')) {
-      final cleaned = _cleanHtml(td.innerHtml);
-      final lines = cleaned
-          .split('\n')
-          .map((line) => line.trim())
-          .where((line) => line.isNotEmpty)
-          .toList();
-
-      if (lines.length > 1) {
-        final text = cleaned.toLowerCase();
-        if (text.contains('summer camp') && text.contains('vidyapith')) {
-          // Extract description part (skip title)
-          final descriptionLines = lines.skip(1).where((line) {
-            final lower = line.toLowerCase();
-            return !lower.contains('summer camp') ||
-                !lower.contains('vidyapith');
-          }).toList();
-
-          if (descriptionLines.isEmpty) {
-            // If no separate description, use all lines after first
-            return lines.skip(1).join(' ').trim();
-          }
-
-          return descriptionLines.join(' ').trim();
-        }
+      final body = _summerCampBodyFromCleanedText(_cleanHtml(td.innerHtml));
+      if (body != null) {
+        return body;
       }
     }
 
     return 'Summer Camp information unavailable.';
+  }
+
+  /// Returns the summer camp body text from a cleaned blob, or null if unmatched.
+  ///
+  /// Accepts text that mentions summer camp and looks like the program blurb
+  /// (e.g. contains "invigorating" or "vidyapith" + substantial length).
+  String? _summerCampBodyFromCleanedText(String cleaned) {
+    final trimmed = cleaned.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    final lower = trimmed.toLowerCase();
+    final looksLikeBlurb =
+        lower.contains('summer camp') &&
+        (lower.contains('invigorating') ||
+            (lower.contains('vidyapith') && trimmed.length > 40));
+    if (!looksLikeBlurb) {
+      return null;
+    }
+
+    // Strip a leading page heading such as "Summer Camp" before the body.
+    final stripped = trimmed.replaceFirst(
+      RegExp(r'^summer\s+camp\s*', caseSensitive: false),
+      '',
+    );
+    final body = stripped.trim();
+    if (body.isEmpty || body.toLowerCase() == 'summer camp') {
+      return null;
+    }
+
+    return body;
   }
 
   ThoughtOfTheDay? _parseThoughtOfTheDay(Document document) {
@@ -961,6 +1523,156 @@ class WebsiteScraper {
     );
   }
 
+  /// Parses the featured quote that appears above Thought of the Day.
+  ///
+  /// Walks previous siblings of the Thought of the Day heading looking for
+  /// quote-like text that is distinct from the thought itself.
+  FeaturedQuote? _parseFeaturedQuote(Document document) {
+    final heading = _findHeading(document, 'thought of the day');
+    if (heading == null) return null;
+
+    final thought = _parseThoughtOfTheDay(document);
+    final thoughtText = thought?.text.trim().toLowerCase() ?? '';
+
+    // Prefer immediate previous siblings of the heading (and its parent).
+    for (final start in <Element?>[heading, heading.parent]) {
+      if (start == null) continue;
+      Element? current = start.previousElementSibling;
+      while (current != null) {
+        final quote = _extractFeaturedQuoteFromElement(
+          current,
+          thoughtText: thoughtText,
+        );
+        if (quote != null) return quote;
+        current = current.previousElementSibling;
+      }
+    }
+
+    // Fallback: first substantial quote-like block before the heading.
+    final markers = document.querySelectorAll(
+      'p, font, span, div, h1, h2, h3, h4, h5, h6',
+    );
+    final headingIndex = markers.indexOf(heading);
+    final limit = headingIndex >= 0 ? headingIndex : markers.length;
+
+    for (var i = 0; i < limit; i++) {
+      final element = markers[i];
+      if (_isAncestorOf(element, heading)) continue;
+      final quote = _extractFeaturedQuoteFromElement(
+        element,
+        thoughtText: thoughtText,
+        requireSubstantial: true,
+      );
+      if (quote != null) return quote;
+    }
+
+    return null;
+  }
+
+  /// Returns true when [ancestor] contains [descendant] in the DOM tree.
+  bool _isAncestorOf(Element ancestor, Element descendant) {
+    Element? current = descendant.parent;
+    while (current != null) {
+      if (identical(current, ancestor)) return true;
+      current = current.parent;
+    }
+    return false;
+  }
+
+  FeaturedQuote? _extractFeaturedQuoteFromElement(
+    Element element, {
+    required String thoughtText,
+    bool requireSubstantial = false,
+  }) {
+    final cleaned = _cleanHtml(element.innerHtml).trim();
+    final quote = _quoteFromCleanedText(cleaned);
+    if (quote == null) return null;
+
+    final quoteText = quote.text.trim().toLowerCase();
+    if (quoteText.isEmpty || quoteText == thoughtText) return null;
+    if (_looksLikeNavigationOrEvents(quoteText)) return null;
+    if (requireSubstantial && quote.text.length < 40) return null;
+    return quote;
+  }
+
+  /// Splits cleaned HTML text into quote body + optional author.
+  ///
+  /// Prefers text inside quotation marks so internal dashes (e.g. "philosophy –
+  /// by one or more…") are not mistaken for the author attribution that follows
+  /// the closing quote.
+  FeaturedQuote? _quoteFromCleanedText(String cleaned) {
+    if (cleaned.isEmpty) return null;
+
+    var text = cleaned.trim();
+    String? author;
+
+    final quoted = RegExp(
+      r'^[\"\u201C](.+)[\"\u201D]\s*(?:[-–—]\s*)?(.*)$',
+      dotAll: true,
+    ).firstMatch(text);
+
+    if (quoted != null) {
+      text = (quoted.group(1) ?? '').trim();
+      final trailing = (quoted.group(2) ?? '').trim();
+      if (trailing.isNotEmpty) {
+        author = trailing;
+      }
+    } else {
+      // No wrapping quotes: use the last dash-attribution only.
+      final allDashes = RegExp(r'[-–—]\s*').allMatches(text).toList();
+      if (allDashes.isNotEmpty) {
+        final last = allDashes.last;
+        final maybeAuthor = text.substring(last.end).trim();
+        // Treat as author only when the trailing fragment looks like a name,
+        // not a continuation of the sentence (short, no sentence punctuation).
+        if (maybeAuthor.isNotEmpty &&
+            maybeAuthor.length <= 80 &&
+            !maybeAuthor.contains('.') &&
+            !RegExp(r'\band\b', caseSensitive: false).hasMatch(maybeAuthor)) {
+          author = maybeAuthor;
+          text = text.substring(0, last.start).trim();
+        }
+      }
+
+      text = _stripWrappingQuotes(text);
+    }
+
+    if (text.isEmpty) return null;
+
+    final hasAuthor = author != null && author.isNotEmpty;
+    if (!hasAuthor && text.length < 60) return null;
+
+    return FeaturedQuote(
+      text: text,
+      author: author?.isEmpty == true ? null : author,
+    );
+  }
+
+  /// Removes a single pair of leading/trailing straight or curly quotes.
+  String _stripWrappingQuotes(String value) {
+    var text = value.trim();
+    while (text.startsWith('"') ||
+        text.startsWith('\u201C') ||
+        text.startsWith("'")) {
+      text = text.substring(1).trimLeft();
+    }
+    while (text.endsWith('"') ||
+        text.endsWith('\u201D') ||
+        text.endsWith("'")) {
+      text = text.substring(0, text.length - 1).trimRight();
+    }
+    return text;
+  }
+
+  bool _looksLikeNavigationOrEvents(String lower) {
+    return lower.contains('upcoming events') ||
+        lower.contains('calendar') ||
+        lower.contains('food drive') ||
+        lower.contains('letters from') ||
+        lower.contains('admissions') ||
+        lower.contains('bookstore');
+  }
+
   List<String> _parseCarouselImages(Document document) {
     final candidates = document.querySelectorAll('img');
     if (candidates.isEmpty) return const [];
@@ -991,17 +1703,127 @@ class WebsiteScraper {
     return results;
   }
 
-  /// Parses the homepage to find a dynamic link that is not already in Quick Links.
-  /// 
-  /// Scans the homepage for clickable links and returns the first qualifying link
-  /// that is not already part of the Quick Links section. This method is designed
-  /// to be generic and will detect any new dynamic links that appear on the homepage,
-  /// not just specific hardcoded ones.
-  /// 
-  /// Returns null if no qualifying link is found.
-  DynamicLink? _parseDynamicLink(Document document) {
-    // List of URLs that are already in Quick Links - exclude these
-    final excludedUrls = {
+  /// Parses the homepage for consecutive announcement links not in Quick Links.
+  ///
+  /// Collects a consecutive run of sibling announcement blocks (e.g. stacked
+  /// homepage campaign links). Returns an empty list if none are found.
+  List<DynamicLink> _parseDynamicLinks(Document document) {
+    const maxLinks = 5;
+    final baseUri = _homepageUri;
+    final anchors = document.querySelectorAll('a');
+    final detectedAt = DateTime.now();
+
+    Element? firstAnchor;
+    DynamicLink? firstLink;
+    for (final anchor in anchors) {
+      final link = _dynamicLinkFromAnchor(anchor, baseUri, detectedAt);
+      if (link == null) continue;
+      firstAnchor = anchor;
+      firstLink = link;
+      break;
+    }
+
+    if (firstAnchor == null || firstLink == null) {
+      return const [];
+    }
+
+    final results = <DynamicLink>[firstLink];
+    final seenUrls = <String>{firstLink.url.toLowerCase()};
+    final firstBlock = _announcementBlockFor(firstAnchor);
+
+    Element? sibling = firstBlock.nextElementSibling;
+    while (sibling != null && results.length < maxLinks) {
+      if (_isAnnouncementRunTerminator(sibling)) {
+        break;
+      }
+
+      if (_isEmptyOrSpacerBlock(sibling)) {
+        sibling = sibling.nextElementSibling;
+        continue;
+      }
+
+      final siblingAnchors = sibling.querySelectorAll('a');
+      if (siblingAnchors.isEmpty) {
+        // Non-empty block without links ends the announcement run.
+        break;
+      }
+
+      DynamicLink? qualified;
+      var hasContentLink = false;
+      for (final anchor in siblingAnchors) {
+        final href = anchor.attributes['href'];
+        if (href == null || href.isEmpty) continue;
+        if (href.startsWith('mailto:') ||
+            href.startsWith('javascript:') ||
+            href.startsWith('#')) {
+          continue;
+        }
+        hasContentLink = true;
+        qualified ??= _dynamicLinkFromAnchor(anchor, baseUri, detectedAt);
+      }
+
+      if (qualified != null) {
+        final key = qualified.url.toLowerCase();
+        if (!seenUrls.contains(key)) {
+          seenUrls.add(key);
+          results.add(qualified);
+        }
+        sibling = sibling.nextElementSibling;
+        continue;
+      }
+
+      // Excluded or non-qualifying content link ends the consecutive run.
+      if (hasContentLink) {
+        break;
+      }
+
+      sibling = sibling.nextElementSibling;
+    }
+
+    return results;
+  }
+
+  /// Builds a [DynamicLink] from [anchor] when it passes homepage filters.
+  DynamicLink? _dynamicLinkFromAnchor(
+    Element anchor,
+    Uri baseUri,
+    DateTime detectedAt,
+  ) {
+    final href = anchor.attributes['href'];
+    if (href == null || href.isEmpty) return null;
+    if (href.startsWith('mailto:') ||
+        href.startsWith('javascript:') ||
+        href.startsWith('#')) {
+      return null;
+    }
+
+    final resolvedUrl = _resolveHref(href, baseUri);
+    if (resolvedUrl == null || resolvedUrl.isEmpty) return null;
+    if (_isExcludedDynamicLinkUrl(resolvedUrl)) return null;
+    if (_isNavigationDynamicLink(anchor)) return null;
+
+    final linkText = _cleanHtml(anchor.innerHtml).trim();
+    if (linkText.isEmpty || linkText.length < 3) return null;
+
+    final lowerText = linkText.toLowerCase();
+    if (lowerText.startsWith('http://') ||
+        lowerText.startsWith('https://') ||
+        lowerText.endsWith('.pdf') ||
+        lowerText.endsWith('.jpg') ||
+        lowerText.endsWith('.png')) {
+      return null;
+    }
+
+    return DynamicLink(
+      title: linkText,
+      url: resolvedUrl,
+      detectedAt: detectedAt,
+    );
+  }
+
+  /// Whether [url] is already covered by Quick Links or site navigation.
+  bool _isExcludedDynamicLinkUrl(String url) {
+    const excludedUrls = {
       'internal://snack-signup',
       'internal://class/curricular classes',
       'internal://class/music classes',
@@ -1012,115 +1834,100 @@ class WebsiteScraper {
       'internal://donate',
       'https://www.vidyapith.org/uploads/5/2/1/3/52135817/2025-diwali_projects_suggestions.pdf',
     };
-
-    // Also exclude common navigation and footer links
-    final excludedPatterns = [
+    const excludedPatterns = [
       '/about',
       '/events',
       '/contact',
-      '/calendar',
+      'calendar',
       'mailto:',
       'javascript:',
       '#',
     ];
 
-    final baseUri = _homepageUri;
-    final anchors = document.querySelectorAll('a');
+    final lowerUrl = url.toLowerCase();
+    for (final excluded in excludedUrls) {
+      if (lowerUrl.contains(excluded.toLowerCase())) return true;
+    }
+    for (final pattern in excludedPatterns) {
+      if (lowerUrl.contains(pattern.toLowerCase())) return true;
+    }
+    return false;
+  }
 
-    // Scan all links and find the first qualifying one
-    for (final anchor in anchors) {
-      final href = anchor.attributes['href'];
-      if (href == null || href.isEmpty) continue;
+  /// Whether [anchor] sits inside clear site navigation chrome.
+  bool _isNavigationDynamicLink(Element anchor) {
+    Element? parent = anchor.parent;
+    var depth = 0;
+    while (parent != null && depth < 5) {
+      final classes = parent.classes.join(' ').toLowerCase();
+      final id = parent.id.toLowerCase();
+      final tagName = parent.localName?.toLowerCase() ?? '';
 
-      // Skip email links
-      if (href.startsWith('mailto:')) continue;
-
-      // Skip JavaScript links
-      if (href.startsWith('javascript:')) continue;
-
-      // Skip anchor links (same page navigation)
-      if (href.startsWith('#')) continue;
-
-      // Resolve relative URLs
-      final resolvedUrl = _resolveHref(href, baseUri);
-      if (resolvedUrl == null || resolvedUrl.isEmpty) continue;
-
-      // Check if URL is excluded
-      final lowerUrl = resolvedUrl.toLowerCase();
-      bool isExcluded = false;
-
-      // Check against excluded URLs
-      for (final excluded in excludedUrls) {
-        if (lowerUrl.contains(excluded.toLowerCase())) {
-          isExcluded = true;
-          break;
-        }
+      if ((classes.contains('nav') && !classes.contains('content')) ||
+          (classes.contains('menu') && !classes.contains('content')) ||
+          (tagName == 'nav') ||
+          (tagName == 'header' &&
+              id.contains('header') &&
+              !classes.contains('content')) ||
+          (tagName == 'footer' && id.contains('footer'))) {
+        return true;
       }
+      parent = parent.parent;
+      depth++;
+    }
+    return false;
+  }
 
-      // Check against excluded patterns
-      if (!isExcluded) {
-        for (final pattern in excludedPatterns) {
-          if (lowerUrl.contains(pattern.toLowerCase())) {
-            isExcluded = true;
-            break;
+  /// Nearest Weebly-style paragraph/block wrapper for an announcement anchor.
+  Element _announcementBlockFor(Element anchor) {
+    Element? current = anchor.parent;
+    while (current != null) {
+      final classes = current.classes.join(' ').toLowerCase();
+      final tag = current.localName?.toLowerCase() ?? '';
+      if (classes.contains('paragraph') ||
+          tag == 'p' ||
+          tag == 'li' ||
+          tag == 'div') {
+        // Prefer Weebly paragraph blocks; otherwise use the nearest block.
+        if (classes.contains('paragraph') || tag == 'p' || tag == 'li') {
+          return current;
+        }
+        // Use a div only if it is a direct content sibling container.
+        if (tag == 'div' && current.parent != null) {
+          final parentHasMultipleBlocks =
+              current.parent!.children.where((c) {
+                final t = c.localName?.toLowerCase();
+                return t == 'div' || t == 'p';
+              }).length >
+              1;
+          if (parentHasMultipleBlocks) {
+            return current;
           }
         }
       }
-
-      if (isExcluded) continue;
-
-      // Skip links that are clearly navigation (header/footer)
-      // But be less aggressive - only exclude if we're very sure it's navigation
-      Element? parent = anchor.parent;
-      int depth = 0;
-      bool isNavigation = false;
-      while (parent != null && depth < 5) {
-        final classes = parent.classes.join(' ').toLowerCase();
-        final id = parent.id.toLowerCase();
-        final tagName = parent.localName?.toLowerCase() ?? '';
-        
-        // Only exclude if it's clearly in a nav/menu/header/footer element
-        // Be less strict to allow content links through
-        if ((classes.contains('nav') && !classes.contains('content')) ||
-            (classes.contains('menu') && !classes.contains('content')) ||
-            (tagName == 'nav') ||
-            (tagName == 'header' && id.contains('header') && !classes.contains('content')) ||
-            (tagName == 'footer' && id.contains('footer'))) {
-          isNavigation = true;
-          break;
-        }
-        parent = parent.parent;
-        depth++;
-      }
-
-      if (isNavigation) continue;
-
-      // Extract link text
-      final linkText = _cleanHtml(anchor.innerHtml).trim();
-      if (linkText.isEmpty) continue;
-      
-      // Skip very short link text (likely not meaningful content)
-      if (linkText.length < 3) continue;
-      
-      // Skip links that are just URLs or file names
-      if (linkText.toLowerCase().startsWith('http://') ||
-          linkText.toLowerCase().startsWith('https://') ||
-          linkText.toLowerCase().endsWith('.pdf') ||
-          linkText.toLowerCase().endsWith('.jpg') ||
-          linkText.toLowerCase().endsWith('.png')) {
-        continue;
-      }
-
-      // Found a qualifying link - return it
-      return DynamicLink(
-        title: linkText,
-        url: resolvedUrl,
-        detectedAt: DateTime.now(),
-      );
+      current = current.parent;
     }
+    return anchor.parent ?? anchor;
+  }
 
-    // No qualifying link found
-    return null;
+  /// Horizontal rules and similar markers end the announcement sibling run.
+  bool _isAnnouncementRunTerminator(Element element) {
+    final tag = element.localName?.toLowerCase() ?? '';
+    if (tag == 'hr') return true;
+    if (element.querySelector('hr') != null) return true;
+    final text = _cleanHtml(element.innerHtml).trim().toLowerCase();
+    if (text.contains('thought of the day')) {
+      return true;
+    }
+    return false;
+  }
+
+  /// True when a sibling block is visually empty / spacer-only.
+  bool _isEmptyOrSpacerBlock(Element element) {
+    final text = _cleanHtml(element.innerHtml).trim();
+    if (text.isNotEmpty) return false;
+    // Allow spacer images / empty wrappers without ending the run.
+    return element.querySelectorAll('a').isEmpty;
   }
 
   /// Fetches all clickable links from a given page, excluding navigation links.
@@ -1653,66 +2460,141 @@ class WebsiteScraper {
     return true;
   }
 
+  /// Extracts one curricular section (youngsters or adults) from the page.
+  ///
+  /// Titles come from the matching `h2` / `<strong>` heading. The full sibling
+  /// `div.paragraph` text becomes [CurricularClassesSection.description]
+  /// (schedule is left empty). The image is taken from the sibling multicol
+  /// column in the same row, falling back to [fallbackImageUrl].
   CurricularClassesSection? _extractCurricularSection(
     Document document, {
     required bool Function(String loweredText) match,
+    required String fallbackImageUrl,
   }) {
-    Element? targetTd;
-
-    for (final strong in document.querySelectorAll('strong')) {
-      final text = _cleanHtml(strong.innerHtml).toLowerCase();
-      if (match(text)) {
-        targetTd = _findParentTd(strong);
-        break;
-      }
-    }
-
-    if (targetTd == null) {
-      for (final td in document.querySelectorAll('table tr td')) {
-        final text = _cleanHtml(td.innerHtml).toLowerCase();
-        if (match(text)) {
-          targetTd = td;
-          break;
-        }
-      }
-    }
-
-    if (targetTd == null || targetTd.localName != 'td') {
+    final Element? titleElement = _findCurricularTitleElement(document, match);
+    if (titleElement == null) {
       return null;
     }
 
-    final lines = _cleanHtml(targetTd.innerHtml)
-        .split('\n')
-        .map((line) => line.trim())
-        .where((line) => line.isNotEmpty)
-        .toList();
+    Element heading = titleElement;
+    while (heading.parent != null && heading.localName != 'h2') {
+      heading = heading.parent!;
+    }
 
-    if (lines.isEmpty) {
+    final String title = _cleanHtml(heading.innerHtml);
+    if (title.isEmpty) {
       return null;
     }
 
-    final title = lines.first;
-    String schedule = '';
-    final List<String> descriptionLines = [];
-
-    for (final line in lines.skip(1)) {
-      final lower = line.toLowerCase();
-      if (schedule.isEmpty &&
-          (lower.startsWith('classes are held') ||
-              lower.startsWith('scriptural study classes are held'))) {
-        schedule = line;
-      } else {
-        descriptionLines.add(line);
-      }
+    final String description = _extractCurricularDescription(heading);
+    if (description.isEmpty) {
+      return null;
     }
 
-    final description = descriptionLines.join(' ');
+    final String imageUrl =
+        _extractCurricularSectionImage(heading) ?? fallbackImageUrl;
 
     return CurricularClassesSection(
       title: title,
-      schedule: schedule,
+      schedule: '',
       description: description,
+      imageUrl: imageUrl,
     );
+  }
+
+  /// Finds a curricular heading element whose cleaned text matches [match].
+  Element? _findCurricularTitleElement(
+    Document document,
+    bool Function(String loweredText) match,
+  ) {
+    for (final Element heading in document.querySelectorAll('h2')) {
+      final String text = _cleanHtml(heading.innerHtml).toLowerCase();
+      if (match(text)) {
+        return heading;
+      }
+    }
+
+    for (final Element strong in document.querySelectorAll('strong')) {
+      final String text = _cleanHtml(strong.innerHtml).toLowerCase();
+      if (match(text)) {
+        return strong;
+      }
+    }
+
+    return null;
+  }
+
+  /// Returns the full paragraph text following [heading] in its column.
+  String _extractCurricularDescription(Element heading) {
+    Element? sibling = heading.nextElementSibling;
+    while (sibling != null) {
+      final String? tag = sibling.localName?.toLowerCase();
+      if (tag == 'h1' || tag == 'h2' || tag == 'h3') {
+        break;
+      }
+
+      final bool isParagraph =
+          tag == 'div' &&
+          (sibling.classes.contains('paragraph') ||
+              sibling.querySelector('.paragraph') != null);
+      if (isParagraph || tag == 'p') {
+        final Element paragraph =
+            sibling.classes.contains('paragraph') || tag == 'p'
+            ? sibling
+            : sibling.querySelector('.paragraph')!;
+        final String text = _cleanHtml(paragraph.innerHtml);
+        if (text.isNotEmpty) {
+          return text;
+        }
+      }
+
+      sibling = sibling.nextElementSibling;
+    }
+
+    // Fallback: paragraph elsewhere in the same multicol cell.
+    final Element? cell = _findParentTd(heading);
+    if (cell != null) {
+      final Element? paragraph = cell.querySelector('.paragraph') ?? cell.querySelector('p');
+      if (paragraph != null) {
+        return _cleanHtml(paragraph.innerHtml);
+      }
+    }
+
+    return '';
+  }
+
+  /// Resolves the image URL from the sibling multicol column of [heading].
+  String? _extractCurricularSectionImage(Element heading) {
+    final Element? cell = _findParentTd(heading);
+    final Element? row = cell?.parent;
+    if (cell == null || row == null) {
+      return null;
+    }
+
+    for (final Element siblingCell in row.children) {
+      if (identical(siblingCell, cell)) {
+        continue;
+      }
+      if (siblingCell.localName != 'td') {
+        continue;
+      }
+
+      for (final Element image in siblingCell.querySelectorAll('img')) {
+        final String? url = _resolveImageUrl(image);
+        if (url == null || url.isEmpty) {
+          continue;
+        }
+        final String lower = url.toLowerCase();
+        if (lower.contains('letterhead') ||
+            lower.contains('logo') ||
+            lower.contains('favicon')) {
+          continue;
+        }
+        return url;
+      }
+    }
+
+    return null;
   }
 
   Element? _findParentTd(Element element) {
@@ -1721,25 +2603,6 @@ class WebsiteScraper {
       current = current.parent;
     }
     return current;
-  }
-
-  String? _extractCurricularThumbnail(Document document) {
-    for (final image in document.querySelectorAll('img')) {
-      final url = _resolveImageUrl(image);
-      if (url == null || url.isEmpty) {
-        continue;
-      }
-      if (url.contains('6185815')) {
-        return url;
-      }
-    }
-
-    final firstImage = document.querySelector('img');
-    if (firstImage != null) {
-      return _resolveImageUrl(firstImage);
-    }
-
-    return null;
   }
 
   List<UpcomingEvent> _parseUpcomingEvents(Document document) {
@@ -1767,8 +2630,8 @@ class WebsiteScraper {
         }
       }
 
-      // Extract text content from this element
-      final cleaned = _cleanHtml(current.innerHtml);
+      // Preserve <br> as line breaks so each posted event becomes its own line
+      final cleaned = _cleanUpcomingEventsHtml(current.innerHtml);
       if (cleaned.isNotEmpty) {
         final lines = cleaned
             .split(RegExp(r'\n+'))
@@ -1787,7 +2650,7 @@ class WebsiteScraper {
     if (eventLines.isEmpty) {
       final parentNext = heading.parent?.nextElementSibling;
       if (parentNext != null) {
-        final cleaned = _cleanHtml(parentNext.innerHtml);
+        final cleaned = _cleanUpcomingEventsHtml(parentNext.innerHtml);
         if (cleaned.isNotEmpty) {
           eventLines.addAll(
             cleaned
@@ -1802,98 +2665,30 @@ class WebsiteScraper {
 
     if (eventLines.isEmpty) return const [];
 
-    final now = DateTime.now();
-    final currentYear = now.year;
-    final currentMonth = now.month;
-    final currentDay = now.day;
+    final entries = expandUpcomingEventLines(eventLines);
+    final events = entries.map(upcomingEventFromEntry);
+    return filterAndSortUpcomingEvents(events);
+  }
 
-    // Parse events and filter out past events
-    final today = DateTime(currentYear, currentMonth, currentDay);
-    
-    return eventLines.map((entry) {
-      final segments = entry.split(' - ');
-      final title = segments.isNotEmpty ? segments.last.trim() : entry.trim();
-      final details = segments.length > 1
-          ? segments.sublist(0, segments.length - 1).join(' - ').trim()
-          : null;
-      return UpcomingEvent(
-        title: title,
-        details: (details != null && details.isNotEmpty) ? details : null,
-      );
-    }).where((event) {
-      // Filter out past events by checking if the event date is in the past
-      final eventText = '${event.details ?? ''} ${event.title}'.toLowerCase();
-      
-      // Try to parse date from event text (format: "Month Day" or "Month Day, Year")
-      final dateMatch = RegExp(
-        r'(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:\s*,\s*(\d{4}))?',
-        caseSensitive: false,
-      ).firstMatch(eventText);
-
-      // If no date found, exclude the event - we only want events with dates
-      if (dateMatch == null) {
-        return false;
-      }
-
-      final monthName = dateMatch.group(1)!.toLowerCase();
-      final dayStr = dateMatch.group(2) ?? '';
-      final day = int.tryParse(dayStr);
-      if (day == null || day < 1 || day > 31) {
-        return false; // Invalid day
-      }
-      
-      final yearStr = dateMatch.group(3);
-      int year;
-      if (yearStr != null && yearStr.isNotEmpty) {
-        year = int.tryParse(yearStr) ?? currentYear;
-      } else {
-        // If no year specified, assume current year or next year if month has passed
-        year = currentYear;
-        // If the month has already passed this year, assume next year
-        final monthMap = {
-          'january': 1, 'february': 2, 'march': 3, 'april': 4,
-          'may': 5, 'june': 6, 'july': 7, 'august': 8,
-          'september': 9, 'october': 10, 'november': 11, 'december': 12,
-        };
-        final month = monthMap[monthName] ?? 1;
-        if (month < currentMonth || (month == currentMonth && day < currentDay)) {
-          year = currentYear + 1;
-        }
-      }
-
-      // Map month name to number
-      final monthMap = {
-        'january': 1,
-        'february': 2,
-        'march': 3,
-        'april': 4,
-        'may': 5,
-        'june': 6,
-        'july': 7,
-        'august': 8,
-        'september': 9,
-        'october': 10,
-        'november': 11,
-        'december': 12,
-      };
-
-      final month = monthMap[monthName] ?? 1;
-      if (month < 1 || month > 12) {
-        return false; // Invalid month
-      }
-
-      // Create event date
-      try {
-        final eventDate = DateTime(year, month, day);
-        final eventDateOnly = DateTime(eventDate.year, eventDate.month, eventDate.day);
-
-        // Only include events that are today or in the future (strictly exclude past events)
-        return eventDateOnly.isAfter(today) || eventDateOnly.isAtSameMomentAs(today);
-      } catch (_) {
-        // Invalid date (e.g., February 30)
-        return false;
-      }
-    }).toList();
+  /// Cleans upcoming-events HTML while keeping `<br>` as newlines.
+  ///
+  /// The homepage posts multiple events in one paragraph separated by
+  /// `<br /><br />`. Preserving those breaks makes each event its own line
+  /// before weekday-boundary splitting runs as a fallback.
+  String _cleanUpcomingEventsHtml(String html) {
+    final withBreaks = html.replaceAll(
+      RegExp(r'(<br\s*/?>)+', caseSensitive: false),
+      '\n',
+    );
+    final fragment = html_parser.parseFragment(withBreaks);
+    return (fragment.text ?? '')
+        .replaceAll('\u00A0', ' ')
+        .replaceAll('\u200B', '')
+        .replaceAll('\r', '\n')
+        .split('\n')
+        .map((line) => line.replaceAll(RegExp(r'[ \t]+'), ' ').trim())
+        .where((line) => line.isNotEmpty)
+        .join('\n');
   }
 
   Element? _findHeading(Document document, String containsText) {
@@ -2030,18 +2825,26 @@ class WebsiteScraper {
       }
     }
 
+    // Preserve website <br> page breaks as newlines (do not use _cleanHtml here).
     final List<String> lines = infoElement != null
-        ? _cleanHtml(infoElement.innerHtml)
-              .split('\n')
-              .map(_normalizeBookstoreLine)
-              .where((line) => line.isNotEmpty)
-              .toList()
+        ? _bookstoreLinesFromHtml(infoElement.innerHtml)
         : const [];
 
     final List<String> aboutLines = [];
     final List<String> locationLines = [];
     final List<String> hours = [];
     String? contactEmail;
+
+    // Decode Cloudflare-protected emails from anchors before reading body text.
+    if (infoElement != null) {
+      for (final Element anchor in infoElement.querySelectorAll('a')) {
+        final String? email = _extractEmailFromAnchor(anchor);
+        if (email != null && email.isNotEmpty) {
+          contactEmail = email;
+          break;
+        }
+      }
+    }
 
     String? currentSection;
     final RegExp emailRegex = RegExp(
@@ -2067,9 +2870,21 @@ class WebsiteScraper {
         continue;
       }
 
+      // Skip Cloudflare placeholder text such as "[email protected]".
+      if (lowered.contains('[email') ||
+          lowered.contains('email protected') ||
+          lowered.contains('email\u00a0protected')) {
+        continue;
+      }
+
       final Match? emailMatch = emailRegex.firstMatch(line);
       if (emailMatch != null) {
         contactEmail ??= emailMatch.group(0);
+        continue;
+      }
+
+      // Contact copy belongs in the Questions card (email only), not body text.
+      if (currentSection == 'questions') {
         continue;
       }
 
@@ -2088,14 +2903,10 @@ class WebsiteScraper {
       }
     }
 
-    String about = aboutLines.join(' ');
-    if (about.isEmpty && infoElement != null) {
-      about = _cleanHtml(
-        infoElement.innerHtml,
-      ).replaceAll(RegExp(r'About Us\s*:?', caseSensitive: false), '').trim();
-    }
-
-    about = about.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final String about = aboutLines
+        .join(' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
 
     final List<String> sanitizedLocationLines = locationLines
         .map((line) => line.replaceAll(RegExp(r'\s+'), ' ').trim())
@@ -2115,6 +2926,29 @@ class WebsiteScraper {
       contactEmail: contactEmail,
       fetchedAt: now,
     );
+  }
+
+  /// Converts bookstore HTML into plain text lines, preserving `<br>` breaks.
+  ///
+  /// Unlike [_cleanHtml], this keeps website page breaks so About / Location /
+  /// Hours / Questions can be split the same way as on bookstore.html.
+  List<String> _bookstoreLinesFromHtml(String html) {
+    final withBreaks = html.replaceAll(
+      RegExp(r'(<br\s*/?>)+', caseSensitive: false),
+      '\n',
+    );
+    final fragment = html_parser.parseFragment(withBreaks);
+    final text = (fragment.text ?? '')
+        .replaceAll('\u00A0', ' ')
+        .replaceAll('\u200B', '')
+        .replaceAll('\r\n', '\n')
+        .replaceAll('\r', '\n');
+
+    return text
+        .split('\n')
+        .map(_normalizeBookstoreLine)
+        .where((line) => line.isNotEmpty)
+        .toList();
   }
 
   String _normalizeBookstoreLine(String line) {
@@ -2475,230 +3309,107 @@ class WebsiteScraper {
   }
 
   AdmissionsContent _parseAdmissionsContent(Document document) {
-    String? sectionI;
-    String? sectionII;
-    String? sectionIII;
-    String? sectionIV;
     String? kgFormUrl;
     String? alternateRouteFormUrl;
     final List<String> addressLines = [];
+    List<AdmissionsParagraph> paragraphs = [];
 
-    // Find the main content area - typically within a div or table
-    Element? mainContent;
-    
-    // Try to find content by looking for "ADMISSIONS" heading
-    final heading = _findHeading(document, 'admissions');
-    if (heading != null) {
-      // Find the parent container that holds all sections
-      Element? current = heading.parent;
-      while (current != null && current.localName != 'body') {
-        final text = _cleanHtml(current.innerHtml).toLowerCase();
-        if (text.contains('new admissions') || text.contains('kindergarten')) {
-          mainContent = current;
-          break;
-        }
-        current = current.parent;
+    // Prefer the Weebly paragraph that contains the I. / II. / III. notice.
+    Element? bodyElement;
+    for (final element in document.querySelectorAll(
+      'div.paragraph, div.wsite-text, div.wsite-content-title, p',
+    )) {
+      final plain = _cleanHtml(element.innerHtml).toLowerCase();
+      if (plain.contains('i.') &&
+          (plain.contains('admission') || plain.contains('kindergarten'))) {
+        bodyElement = element;
+        break;
       }
     }
 
-    // If not found by heading, try to find by table or div structure
-    if (mainContent == null) {
-      for (final element in document.querySelectorAll('div.paragraph, div.wsite-text, table')) {
-        final text = _cleanHtml(element.innerHtml).toLowerCase();
-        if (text.contains('admissions') && 
-            (text.contains('new admissions') || text.contains('kindergarten'))) {
-          mainContent = element;
-          break;
+    // Fallback: walk up from an ADMISSIONS heading.
+    if (bodyElement == null) {
+      final heading = _findHeading(document, 'admissions');
+      if (heading != null) {
+        Element? current = heading.parent;
+        while (current != null && current.localName != 'body') {
+          final text = _cleanHtml(current.innerHtml).toLowerCase();
+          if (text.contains('i.') &&
+              (text.contains('admission') || text.contains('kindergarten'))) {
+            bodyElement = current;
+            break;
+          }
+          current = current.parent;
         }
       }
     }
 
-    // If still not found, use body as fallback
-    mainContent ??= document.body;
+    bodyElement ??= document.body;
 
-    if (mainContent != null) {
-      final cleaned = _cleanHtml(mainContent.innerHtml);
-      final lines = cleaned
-          .split(RegExp(r'\n+'))
-          .map((line) => line.trim())
+    if (bodyElement != null) {
+      paragraphs = _parseAdmissionsRichParagraphs(bodyElement);
+    }
+
+    // Extract form URLs from anchor tags - search entire document
+    final baseUri = Uri.parse(_admissionsUrl);
+    for (final anchor in document.querySelectorAll('a')) {
+      final href = anchor.attributes['href'];
+      if (href == null || href.isEmpty) continue;
+
+      final anchorText = _cleanHtml(anchor.innerHtml).toLowerCase();
+      final resolvedUrl = _resolveHref(href, baseUri);
+      if (resolvedUrl == null) continue;
+
+      if (kgFormUrl == null &&
+          (anchorText.contains('kg inquiry form') ||
+              anchorText.contains('kindergarten inquiry') ||
+              anchorText.contains('2026-27 kg') ||
+              anchorText.contains('kg inquiry'))) {
+        kgFormUrl = resolvedUrl;
+      }
+
+      if (alternateRouteFormUrl == null &&
+          (anchorText.contains('alternate route inquiry') ||
+              anchorText.contains('grades 1-5 inquiry') ||
+              anchorText.contains('alternate route inquiry form') ||
+              anchorText.contains('2026-27 alternate'))) {
+        alternateRouteFormUrl = resolvedUrl;
+      }
+    }
+
+    // Address: prefer a compact heading/span that lists Vivekananda + Hinchman.
+    for (final element in document.querySelectorAll('h2, h3, span, div, p')) {
+      final html = element.innerHtml;
+      final plain = _cleanHtml(html);
+      final lower = plain.toLowerCase();
+      if (!lower.contains('vivekananda vidyapith') ||
+          !lower.contains('hinchman')) {
+        continue;
+      }
+      // Skip large containers that also include the I./II./III. body.
+      if (lower.contains('i.') &&
+          (lower.contains('closed') || lower.contains('kindergarten'))) {
+        continue;
+      }
+      final lines = html
+          .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+          .replaceAll(RegExp(r'<[^>]+>'), '')
+          .replaceAll('\u00A0', ' ')
+          .replaceAll('\u200B', '')
+          .replaceAll('&nbsp;', ' ')
+          .split('\n')
+          .map((line) => line.replaceAll(RegExp(r'\s+'), ' ').trim())
           .where((line) => line.isNotEmpty)
           .toList();
-
-      final List<String> sectionILines = [];
-      final List<String> sectionIILines = [];
-      final List<String> sectionIIILines = [];
-      final List<String> sectionIVLines = [];
-      String? currentSection;
-
-      for (final line in lines) {
-        final lower = line.toLowerCase();
-        
-        // Detect section markers
-        if (lower.contains('i. new admissions') || 
-            (lower.contains('new admissions') && lower.contains('closed'))) {
-          currentSection = 'I';
-          // Include the section header line
-          sectionILines.add(line);
-        } else if (lower.contains('ii.') && lower.contains('kindergarten')) {
-          currentSection = 'II';
-          // Include the section header line
-          sectionIILines.add(line);
-        } else if (lower.contains('iii.') && (lower.contains('grades') || lower.contains('1-5'))) {
-          currentSection = 'III';
-          // Include the section header line
-          sectionIIILines.add(line);
-        } else if (lower.contains('iv.') || 
-                   (lower.contains('beyond') && lower.contains('5th grade'))) {
-          currentSection = 'IV';
-          // Include the section header line
-          sectionIVLines.add(line);
-        } else if (lower.contains('vivekananda vidyapith') && 
-                   lower.contains('hinchman')) {
-          // Address section
-          addressLines.add(line);
-          continue;
-        } else {
-          // Add line to appropriate section
-          switch (currentSection) {
-            case 'I':
-              sectionILines.add(line);
-              break;
-            case 'II':
-              sectionIILines.add(line);
-              break;
-            case 'III':
-              sectionIIILines.add(line);
-              break;
-            case 'IV':
-              sectionIVLines.add(line);
-              break;
-          }
-        }
-      }
-
-      // Remove section headers (I., II., III., IV.) from content
-      sectionI = sectionILines.isNotEmpty 
-          ? sectionILines
-              .join('\n\n')
-              .replaceAll(RegExp(r'^I\.?\s*', caseSensitive: false), '')
-              .trim() 
-          : null;
-      sectionII = sectionIILines.isNotEmpty 
-          ? sectionIILines
-              .join('\n\n')
-              .replaceAll(RegExp(r'^II\.?\s*', caseSensitive: false), '')
-              .trim() 
-          : null;
-      sectionIII = sectionIIILines.isNotEmpty 
-          ? sectionIIILines
-              .join('\n\n')
-              .replaceAll(RegExp(r'^III\.?\s*', caseSensitive: false), '')
-              .trim() 
-          : null;
-      sectionIV = sectionIVLines.isNotEmpty 
-          ? sectionIVLines
-              .join('\n\n')
-              .replaceAll(RegExp(r'^IV\.?\s*', caseSensitive: false), '')
-              .trim() 
-          : null;
-
-      // Extract form URLs from anchor tags - search entire document
-      final baseUri = Uri.parse(_admissionsUrl);
-      for (final anchor in document.querySelectorAll('a')) {
-        final href = anchor.attributes['href'];
-        if (href == null || href.isEmpty) continue;
-        
-        final anchorText = _cleanHtml(anchor.innerHtml).toLowerCase();
-        final resolvedUrl = _resolveHref(href, baseUri);
-        if (resolvedUrl == null) continue;
-        
-        // Look for KG Inquiry Form - more flexible matching
-        if (kgFormUrl == null && 
-            (anchorText.contains('kg inquiry form') || 
-             anchorText.contains('kindergarten inquiry') ||
-             anchorText.contains('2026-27 kg') ||
-             anchorText.contains('kg inquiry'))) {
-          kgFormUrl = resolvedUrl;
-        }
-        
-        // Look for Alternate Route Inquiry Form - more flexible matching
-        if (alternateRouteFormUrl == null && 
-            (anchorText.contains('alternate route inquiry') ||
-             anchorText.contains('grades 1-5 inquiry') ||
-             anchorText.contains('alternate route inquiry form') ||
-             anchorText.contains('2026-27 alternate'))) {
-          alternateRouteFormUrl = resolvedUrl;
-        }
-      }
-
-      // If sections weren't found by markers, try to parse by content patterns
-      if (sectionI == null && sectionII == null && sectionIII == null && sectionIV == null) {
-        // Fallback: parse entire content and split by logical breaks
-        final allText = cleaned;
-        
-        // Try to extract sections using regex patterns
-        final sectionIPattern = RegExp(
-          r'(I\.?\s*New\s+Admissions[^\n]*(?:\n(?!I{1,3}\.)[^\n]*)*)',
-          caseSensitive: false,
-          dotAll: true,
-        );
-        final sectionIIPattern = RegExp(
-          r'(II\.?\s*For\s+Admission[^\n]*(?:\n(?!I{1,3}\.)[^\n]*)*)',
-          caseSensitive: false,
-          dotAll: true,
-        );
-        final sectionIIIPattern = RegExp(
-          r'(III\.?\s*For\s+Admission[^\n]*(?:\n(?!I{1,3}\.)[^\n]*)*)',
-          caseSensitive: false,
-          dotAll: true,
-        );
-        final sectionIVPattern = RegExp(
-          r'(IV\.?\s*Because[^\n]*(?:\n(?!I{1,3}\.)[^\n]*)*)',
-          caseSensitive: false,
-          dotAll: true,
-        );
-
-        final sectionIMatch = sectionIPattern.firstMatch(allText);
-        final sectionIIMatch = sectionIIPattern.firstMatch(allText);
-        final sectionIIIMatch = sectionIIIPattern.firstMatch(allText);
-        final sectionIVMatch = sectionIVPattern.firstMatch(allText);
-
-        sectionI = sectionIMatch?.group(1)?.trim()
-            ?.replaceAll(RegExp(r'^I\.?\s*', caseSensitive: false), '')
-            ?.trim();
-        sectionII = sectionIIMatch?.group(1)?.trim()
-            ?.replaceAll(RegExp(r'^II\.?\s*', caseSensitive: false), '')
-            ?.trim();
-        sectionIII = sectionIIIMatch?.group(1)?.trim()
-            ?.replaceAll(RegExp(r'^III\.?\s*', caseSensitive: false), '')
-            ?.trim();
-        sectionIV = sectionIVMatch?.group(1)?.trim()
-            ?.replaceAll(RegExp(r'^IV\.?\s*', caseSensitive: false), '')
-            ?.trim();
-      }
-
-      // Extract address if not already found
-      if (addressLines.isEmpty) {
-        final addressPattern = RegExp(
-          r'(Vivekananda\s+Vidyapith\s+(?:\d+\s+)?[^\n]+\n[^\n]+\n[^\n]+)',
-          caseSensitive: false,
-        );
-        final addressMatch = addressPattern.firstMatch(cleaned);
-        if (addressMatch != null) {
-          final addressText = addressMatch.group(1);
-          if (addressText != null) {
-            addressLines.addAll(
-              addressText
-                  .split('\n')
-                  .map((line) => line.trim())
-                  .where((line) => line.isNotEmpty),
-            );
-          }
-        }
+      if (lines.length >= 2 &&
+          lines.first.toLowerCase().contains('vivekananda vidyapith')) {
+        addressLines
+          ..clear()
+          ..addAll(lines.take(3));
+        break;
       }
     }
 
-    // Fallback address if not found
     if (addressLines.isEmpty) {
       addressLines.addAll([
         'Vivekananda Vidyapith',
@@ -2708,15 +3419,143 @@ class WebsiteScraper {
     }
 
     return AdmissionsContent(
-      sectionI: sectionI,
-      sectionII: sectionII,
-      sectionIII: sectionIII,
-      sectionIV: sectionIV,
+      paragraphs: paragraphs,
       kgFormUrl: kgFormUrl,
       alternateRouteFormUrl: alternateRouteFormUrl,
       addressLines: addressLines,
       fetchedAt: DateTime.now(),
     );
+  }
+
+  /// Parses admissions body HTML into paragraphs, preserving bold and underline.
+  ///
+  /// `<br>` tags become paragraph breaks (consecutive breaks collapse).
+  /// `<strong>`/`<b>` set bold; `<u>` sets underline. Maroon color is ignored.
+  List<AdmissionsParagraph> _parseAdmissionsRichParagraphs(Element root) {
+    final List<List<AdmissionsTextSpan>> paragraphBuffers = [[]];
+
+    void flushEmptyTrailing() {
+      while (paragraphBuffers.length > 1 &&
+          paragraphBuffers.last.every((s) => s.text.trim().isEmpty)) {
+        paragraphBuffers.removeLast();
+      }
+    }
+
+    void startNewParagraph() {
+      final current = paragraphBuffers.last;
+      final hasText = current.any((s) => s.text.trim().isNotEmpty);
+      if (hasText) {
+        paragraphBuffers.add([]);
+      }
+    }
+
+    void appendSpan(String raw, {required bool bold, required bool underline}) {
+      // Normalize whitespace but keep single spaces between words.
+      var text = raw
+          .replaceAll('\u00A0', ' ')
+          .replaceAll('\u200B', '')
+          .replaceAll(RegExp(r'[\n\r\t]+'), ' ');
+      if (text.isEmpty) return;
+
+      final buffer = paragraphBuffers.last;
+      if (buffer.isNotEmpty) {
+        final last = buffer.last;
+        if (last.isBold == bold && last.isUnderlined == underline) {
+          buffer[buffer.length - 1] = AdmissionsTextSpan(
+            text: last.text + text,
+            isBold: bold,
+            isUnderlined: underline,
+          );
+          return;
+        }
+      }
+      buffer.add(
+        AdmissionsTextSpan(
+          text: text,
+          isBold: bold,
+          isUnderlined: underline,
+        ),
+      );
+    }
+
+    void walk(Node node, {required bool bold, required bool underline}) {
+      if (node.nodeType == Node.TEXT_NODE) {
+        final value = node.text ?? '';
+        if (value.isEmpty) return;
+        appendSpan(value, bold: bold, underline: underline);
+        return;
+      }
+
+      if (node is! Element) return;
+      final tag = node.localName?.toLowerCase() ?? '';
+
+      if (tag == 'br') {
+        startNewParagraph();
+        return;
+      }
+
+      // Skip scripts/styles and the ADMISSIONS page title if nested.
+      if (tag == 'script' || tag == 'style') return;
+
+      final nextBold = bold || tag == 'strong' || tag == 'b';
+      final nextUnderline = underline || tag == 'u';
+
+      for (final child in node.nodes) {
+        walk(child, bold: nextBold, underline: nextUnderline);
+      }
+    }
+
+    for (final child in root.nodes) {
+      walk(child, bold: false, underline: false);
+    }
+
+    flushEmptyTrailing();
+
+    return paragraphBuffers
+        .map((spans) {
+          // Collapse internal runs of spaces per span and trim paragraph edges.
+          final cleaned = <AdmissionsTextSpan>[];
+          for (final span in spans) {
+            final text = span.text.replaceAll(RegExp(r' +'), ' ');
+            if (text.isEmpty) continue;
+            if (cleaned.isNotEmpty &&
+                cleaned.last.isBold == span.isBold &&
+                cleaned.last.isUnderlined == span.isUnderlined) {
+              cleaned[cleaned.length - 1] = AdmissionsTextSpan(
+                text: cleaned.last.text + text,
+                isBold: span.isBold,
+                isUnderlined: span.isUnderlined,
+              );
+            } else {
+              cleaned.add(
+                AdmissionsTextSpan(
+                  text: text,
+                  isBold: span.isBold,
+                  isUnderlined: span.isUnderlined,
+                ),
+              );
+            }
+          }
+          if (cleaned.isEmpty) {
+            return const AdmissionsParagraph(spans: []);
+          }
+          // Trim leading/trailing whitespace on the paragraph.
+          cleaned[0] = AdmissionsTextSpan(
+            text: cleaned.first.text.replaceFirst(RegExp(r'^\s+'), ''),
+            isBold: cleaned.first.isBold,
+            isUnderlined: cleaned.first.isUnderlined,
+          );
+          cleaned[cleaned.length - 1] = AdmissionsTextSpan(
+            text: cleaned.last.text.replaceFirst(RegExp(r'\s+$'), ''),
+            isBold: cleaned.last.isBold,
+            isUnderlined: cleaned.last.isUnderlined,
+          );
+          return AdmissionsParagraph(
+            spans: cleaned.where((s) => s.text.isNotEmpty).toList(),
+          );
+        })
+        .where((p) => p.spans.isNotEmpty)
+        .toList();
   }
 
   Future<ContactContent> getContactContent({
@@ -2981,6 +3820,156 @@ class WebsiteScraper {
       generalNotice: generalNotice,
       fetchedAt: DateTime.now(),
     );
+  }
+
+  /// Returns archives content from cache when fresh, otherwise fetches it.
+  ///
+  /// Uses a 24-hour cache. On network failure, returns stale cache when
+  /// available; otherwise rethrows.
+  Future<ArchivesContent> getArchivesContent({
+    bool forceRefresh = false,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    ArchivesContent? cachedContent;
+
+    final cachedJson = prefs.getString(_archivesCacheKey);
+    if (cachedJson != null) {
+      try {
+        final Map<String, dynamic> json = Map<String, dynamic>.from(
+          jsonDecode(cachedJson) as Map,
+        );
+        cachedContent = ArchivesContent.fromJson(json);
+      } catch (_) {
+        cachedContent = null;
+      }
+    }
+
+    if (!forceRefresh && cachedContent != null) {
+      final age = DateTime.now().difference(cachedContent.fetchedAt);
+      if (age <= _archivesCacheDuration) {
+        return cachedContent;
+      }
+    }
+
+    try {
+      final freshContent = await fetchArchivesContent();
+      try {
+        await prefs.setString(
+          _archivesCacheKey,
+          jsonEncode(freshContent.toJson()),
+        );
+      } catch (_) {
+        // Cache write failures should not block returning fresh data.
+      }
+      return freshContent;
+    } catch (_) {
+      if (cachedContent != null) {
+        return cachedContent;
+      }
+      rethrow;
+    }
+  }
+
+  /// Fetches and parses the Archives page from the live website.
+  Future<ArchivesContent> fetchArchivesContent() async {
+    final uri = Uri.parse(_archivesUrl);
+    final response = await _client.get(uri);
+
+    if (response.statusCode != 200) {
+      throw http.ClientException(
+        'Failed to load archives content (status: ${response.statusCode})',
+        uri,
+      );
+    }
+
+    final document = html_parser.parse(utf8.decode(response.bodyBytes));
+    return parseArchivesDocument(document);
+  }
+
+  /// Parses an Archives page [Document] into [ArchivesContent].
+  ///
+  /// Prefer `#wsite-content` so navigation/footer links are ignored.
+  /// Titles have surrounding asterisks stripped; hrefs are resolved to
+  /// absolute URLs.
+  ArchivesContent parseArchivesDocument(Document document) {
+    final Element? root =
+        document.querySelector('#wsite-content') ??
+        document.querySelector('.wsite-elements') ??
+        document.body;
+
+    final baseUri = Uri.parse(_archivesUrl);
+    final List<ArchiveItem> items = [];
+    final Set<String> seenUrls = <String>{};
+
+    if (root != null) {
+      for (final anchor in root.querySelectorAll('a')) {
+        final href = anchor.attributes['href']?.trim();
+        if (href == null || href.isEmpty) continue;
+        if (href.startsWith('mailto:') ||
+            href.startsWith('javascript:') ||
+            href.startsWith('#')) {
+          continue;
+        }
+
+        final resolvedUrl = _resolveHref(href, baseUri);
+        if (resolvedUrl == null || resolvedUrl.isEmpty) continue;
+
+        final title = _normalizeArchiveTitle(
+          _cleanHtml(anchor.innerHtml),
+        );
+        if (title.isEmpty) continue;
+        if (title.toLowerCase() == 'archives') continue;
+
+        if (!seenUrls.add(resolvedUrl)) continue;
+
+        items.add(ArchiveItem(title: title, url: resolvedUrl));
+      }
+    }
+
+    final intro = _parseArchivesIntro(root);
+
+    return ArchivesContent(
+      intro: intro,
+      items: items,
+      fetchedAt: DateTime.now(),
+    );
+  }
+
+  /// Builds the intro paragraph by stripping archive links from content text.
+  String _parseArchivesIntro(Element? root) {
+    if (root == null) return '';
+
+    Element? paragraph;
+    for (final selector in ['.paragraph', 'p', 'div.wsite-text']) {
+      final candidates = root.querySelectorAll(selector);
+      for (final candidate in candidates) {
+        final text = _cleanHtml(candidate.innerHtml);
+        if (text.length < 40) continue;
+        paragraph = candidate;
+        break;
+      }
+      if (paragraph != null) break;
+    }
+
+    final Element source = paragraph ?? root;
+    final withoutLinks = source.innerHtml.replaceAll(
+      RegExp(r'<a\b[^>]*>[\s\S]*?</a>', caseSensitive: false),
+      ' ',
+    );
+    var intro = _cleanHtml(withoutLinks);
+    intro = intro.replaceAll('*', '').replaceAll(RegExp(r'\s+'), ' ').trim();
+
+    // Drop leftover empty punctuation-only fragments after link removal.
+    if (intro.length < 20) return '';
+    return intro;
+  }
+
+  /// Strips asterisks and collapses whitespace in archive link titles.
+  String _normalizeArchiveTitle(String raw) {
+    return raw
+        .replaceAll('*', '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
   }
 
   // ============================================================================

@@ -10,24 +10,15 @@ import '../components/card.dart';
 import '../theme/shadcn_theme.dart';
 import '../components/copyright_widget.dart';
 
-/// Donate Screen - This screen provides all donation options and methods for supporting Vidyapith.
-/// 
-/// What this screen does:
-/// - Displays an introduction explaining how donations support Vidyapith
-/// - Shows multiple donation methods:
-///   - Zelle Transfer: With email address and QR code for easy scanning
-///   - Mail a Check: With mailing address displayed
-///   - PayPal Giving Fund: With link to donate online (no fees deducted)
-///   - Credit Card: With link to donate online (fees deducted)
-///   - Matching Grants: With link to matching donation form
-/// - Fetches all donation information from the Vidyapith website automatically
-/// 
-/// How users interact with it:
-/// - Scroll through all donation options
-/// - Tap "Copy" button to copy Zelle email address to clipboard
-/// - Scan QR code for Zelle donations (if available)
-/// - Tap "Open Link" buttons to open donation pages in a browser
-/// - Pull down to refresh and get the latest donation information
+/// Donate Screen - donation options for supporting Vidyapith.
+///
+/// Methods:
+/// - Zelle Transfer (email + QR)
+/// - Appreciated Financial Securities (email)
+/// - Matching Grants (More Info link)
+/// - Recurring Monthly Donation (More Info link)
+/// - PayPal Giving Fund (More Info link)
+/// - Mail a Check (address)
 class DonateScreen extends StatefulWidget {
   const DonateScreen({super.key});
 
@@ -40,6 +31,29 @@ class _DonateScreenState extends State<DonateScreen> {
   DonateContent? _content;
   bool _isLoading = true;
   String? _errorMessage;
+
+  static const String _zelleCopy =
+      'Donate by Zelle using the email below, or scan the QR code. '
+      'Vidyapith receives the full amount — no fees are deducted.';
+
+  static const String _securitiesCopy =
+      'To donate appreciated financial securities, email Vidyapith using '
+      'the address below to receive brokerage transfer information.';
+
+  static const String _matchingCopy =
+      'If your company provides matching grants for employee donations and '
+      'you would like to secure a matching gift for Vidyapith, open the '
+      'matching donation form below.';
+
+  static const String _recurringCopy =
+      'Make a recurring monthly donation for steady year-round support. '
+      'One-time donations via credit card or Venmo are also available. '
+      'Please consider covering transaction fees so Vidyapith fully '
+      'benefits from your gift.';
+
+  static const String _paypalCopy =
+      'Donate by credit card via PayPal Giving Fund. Vidyapith receives '
+      'the full amount — no fees are deducted.';
 
   @override
   void initState() {
@@ -155,40 +169,42 @@ class _DonateScreenState extends State<DonateScreen> {
     final List<Widget> sections = [
       if (content.introParagraphs.isNotEmpty)
         _buildIntroSection(context, content),
-      if (content.zelleInstruction != null || content.zelleEmail != null)
+      if (content.zelleInstruction != null ||
+          content.zelleEmail != null ||
+          content.zelleQrImageUrl != null)
         _buildZelleSection(context, content),
-      if (content.checkInstruction != null ||
-          content.checkMailingAddress.isNotEmpty)
-        _buildCheckSection(context, content),
-      if (content.paypalGivingInstruction != null ||
-          content.paypalGivingUrl != null)
-        _buildOnlineMethodCard(
-          context,
-          title: 'PayPal Giving Fund',
-          instruction: content.paypalGivingInstruction,
-          note: content.paypalGivingNote,
-          url: content.paypalGivingUrl,
-          icon: Icons.volunteer_activism,
-        ),
-      if (content.creditCardInstruction != null ||
-          content.creditCardUrl != null)
-        _buildOnlineMethodCard(
-          context,
-          title: 'Credit Card',
-          instruction: content.creditCardInstruction,
-          note: content.creditCardNote,
-          url: content.creditCardUrl,
-          icon: Icons.credit_card,
-        ),
+      if (content.securitiesInstruction != null ||
+          content.securitiesEmail != null)
+        _buildSecuritiesSection(context, content),
       if (content.matchingGrantInstruction != null ||
           content.matchingFormUrl != null)
-        _buildOnlineMethodCard(
+        _buildMethodCard(
           context,
           title: 'Matching Grants',
-          instruction: content.matchingGrantInstruction,
+          instruction: _matchingCopy,
           url: content.matchingFormUrl,
           icon: Icons.handshake,
         ),
+      if (content.recurringInstruction != null || content.recurringUrl != null)
+        _buildMethodCard(
+          context,
+          title: 'Recurring Monthly Donation',
+          instruction: _recurringCopy,
+          url: content.recurringUrl,
+          icon: Icons.calendar_month,
+        ),
+      if (content.paypalGivingInstruction != null ||
+          content.paypalGivingUrl != null)
+        _buildMethodCard(
+          context,
+          title: 'PayPal Giving Fund',
+          instruction: _paypalCopy,
+          url: content.paypalGivingUrl,
+          icon: Icons.volunteer_activism,
+        ),
+      if (content.checkInstruction != null ||
+          content.checkMailingAddress.isNotEmpty)
+        _buildCheckSection(context, content),
     ];
 
     return Column(
@@ -241,122 +257,131 @@ class _DonateScreenState extends State<DonateScreen> {
     );
   }
 
+  Widget _buildMethodHeader(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0x2E0B73DA)
+                : const Color(0xFFE8F1FF),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.all(ShadCNTheme.space3),
+          child: Icon(
+            icon,
+            color: isDark
+                ? ShadCNTheme.darkCardForeground
+                : const Color(0xFF0B73DA),
+          ),
+        ),
+        const SizedBox(width: ShadCNTheme.space3),
+        Expanded(
+          child: Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: ShadCNTheme.fontSemibold,
+              color: isDark
+                  ? ShadCNTheme.darkCardForeground
+                  : ShadCNTheme.cardForeground,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBodyText(BuildContext context, String text) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Text(
+      text,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        height: 1.5,
+        color: isDark
+            ? ShadCNTheme.darkMutedForeground
+            : ShadCNTheme.mutedForeground,
+      ),
+    );
+  }
+
+  /// Dedicated email row with a Copy button.
+  Widget _buildEmailCopyRow(BuildContext context, String email) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(ShadCNTheme.space3),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1F2937) : const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.email_outlined,
+            color: isDark
+                ? ShadCNTheme.darkMutedForeground
+                : const Color(0xFF0B73DA),
+          ),
+          const SizedBox(width: ShadCNTheme.space3),
+          Flexible(
+            child: SelectableText(
+              email,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: ShadCNTheme.fontSemibold,
+                color: isDark
+                    ? ShadCNTheme.darkCardForeground
+                    : ShadCNTheme.cardForeground,
+              ),
+            ),
+          ),
+          const SizedBox(width: ShadCNTheme.space3),
+          ShadButton(
+            text: 'Copy',
+            size: ShadButtonSize.sm,
+            variant: ShadButtonVariant.secondary,
+            icon: Icon(
+              Icons.copy,
+              size: theme.textTheme.bodyMedium?.fontSize ?? 16,
+            ),
+            onPressed: () => _copyToClipboard(email),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Builds the Zelle transfer donation section.
-  /// Shows:
-  /// - Instructions for using Zelle
-  /// - The Zelle email address in a copyable box with a "Copy" button
-  /// - A QR code image (if available) that users can scan with their phone's Zelle app
   Widget _buildZelleSection(BuildContext context, DonateContent content) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final String? email = content.zelleEmail;
 
-    String? sanitizedInstruction = content.zelleInstruction;
-    if (sanitizedInstruction != null) {
-      sanitizedInstruction = sanitizedInstruction.replaceAll(
-        RegExp(r'[^@\s]+@[^@\s]+\.[^@\s]+'),
-        'below email',
-      );
-      sanitizedInstruction = sanitizedInstruction.replaceAll(
-        RegExp(r'\s+'),
-        ' ',
-      );
-      sanitizedInstruction = sanitizedInstruction.trim();
-    }
-
     return ShadCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0x2E0B73DA)
-                      : const Color(0xFFE8F1FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.all(ShadCNTheme.space3),
-                child: Icon(
-                  Icons.account_balance,
-                  color: isDark
-                      ? ShadCNTheme.darkCardForeground
-                      : const Color(0xFF0B73DA),
-                ),
-              ),
-              const SizedBox(width: ShadCNTheme.space3),
-              Expanded(
-                child: Text(
-                  'Zelle Transfer',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: ShadCNTheme.fontSemibold,
-                    color: isDark
-                        ? ShadCNTheme.darkCardForeground
-                        : ShadCNTheme.cardForeground,
-                  ),
-                ),
-              ),
-            ],
+          _buildMethodHeader(
+            context,
+            title: 'Zelle Transfer',
+            icon: Icons.account_balance,
           ),
-          if (sanitizedInstruction != null) ...[
-            const SizedBox(height: ShadCNTheme.space3),
-            Text(
-              sanitizedInstruction!,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                height: 1.5,
-                color: isDark
-                    ? ShadCNTheme.darkMutedForeground
-                    : ShadCNTheme.mutedForeground,
-              ),
-            ),
-          ],
+          const SizedBox(height: ShadCNTheme.space3),
+          _buildBodyText(context, _zelleCopy),
           if (email != null) ...[
             const SizedBox(height: ShadCNTheme.space3),
-            Container(
-              padding: const EdgeInsets.all(ShadCNTheme.space3),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF1F2937)
-                    : const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.email_outlined,
-                    color: isDark
-                        ? ShadCNTheme.darkMutedForeground
-                        : const Color(0xFF0B73DA),
-                  ),
-                  const SizedBox(width: ShadCNTheme.space3),
-                  Flexible(
-                    child: SelectableText(
-                      email,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: ShadCNTheme.fontSemibold,
-                        color: isDark
-                            ? ShadCNTheme.darkCardForeground
-                            : ShadCNTheme.cardForeground,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: ShadCNTheme.space3),
-                  ShadButton(
-                    text: 'Copy',
-                    size: ShadButtonSize.sm,
-                    variant: ShadButtonVariant.secondary,
-                    icon: Icon(
-                      Icons.copy,
-                      size: theme.textTheme.bodyMedium?.fontSize ?? 16,
-                    ),
-                    onPressed: () => _copyToClipboard(email),
-                  ),
-                ],
-              ),
-            ),
+            _buildEmailCopyRow(context, email),
           ],
           if (content.zelleQrImageUrl != null) ...[
             const SizedBox(height: ShadCNTheme.space4),
@@ -409,10 +434,31 @@ class _DonateScreenState extends State<DonateScreen> {
     );
   }
 
+  /// Builds the appreciated financial securities section.
+  Widget _buildSecuritiesSection(BuildContext context, DonateContent content) {
+    final String? email = content.securitiesEmail ?? content.zelleEmail;
+
+    return ShadCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildMethodHeader(
+            context,
+            title: 'Appreciated Financial Securities',
+            icon: Icons.trending_up,
+          ),
+          const SizedBox(height: ShadCNTheme.space3),
+          _buildBodyText(context, _securitiesCopy),
+          if (email != null) ...[
+            const SizedBox(height: ShadCNTheme.space3),
+            _buildEmailCopyRow(context, email),
+          ],
+        ],
+      ),
+    );
+  }
+
   /// Builds the check donation section.
-  /// Shows:
-  /// - Instructions for mailing a check
-  /// - The mailing address in a formatted box (Vidyapith name and address)
   Widget _buildCheckSection(BuildContext context, DonateContent content) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -424,61 +470,31 @@ class _DonateScreenState extends State<DonateScreen> {
         ? addressLines.skip(1).toList()
         : addressLines;
 
+    String? checkInstructionText;
+    if (content.checkInstruction != null) {
+      String text = content.checkInstruction!;
+      text = text.replaceAll(
+        RegExp(r'vivekananda\s+vidyapith', caseSensitive: false),
+        '',
+      );
+      text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+      if (text.isNotEmpty) {
+        checkInstructionText = text;
+      }
+    }
+
     return ShadCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0x2E0B73DA)
-                      : const Color(0xFFE8F1FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.all(ShadCNTheme.space3),
-                child: Icon(
-                  Icons.local_post_office_outlined,
-                  color: isDark
-                      ? ShadCNTheme.darkCardForeground
-                      : const Color(0xFF0B73DA),
-                ),
-              ),
-              const SizedBox(width: ShadCNTheme.space3),
-              Expanded(
-                child: Text(
-                  'Mail a Check',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: ShadCNTheme.fontSemibold,
-                    color: isDark
-                        ? ShadCNTheme.darkCardForeground
-                        : ShadCNTheme.cardForeground,
-                  ),
-                ),
-              ),
-            ],
+          _buildMethodHeader(
+            context,
+            title: 'Mail a Check',
+            icon: Icons.local_post_office_outlined,
           ),
-          if (content.checkInstruction != null) ...[
+          if (checkInstructionText != null) ...[
             const SizedBox(height: ShadCNTheme.space3),
-            Text(
-              (() {
-                String text = content.checkInstruction!;
-                text = text.replaceAll(
-                  RegExp(r'vivekananda\s+vidyapith', caseSensitive: false),
-                  '',
-                );
-                text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
-                return text;
-              })(),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                height: 1.5,
-                color: isDark
-                    ? ShadCNTheme.darkMutedForeground
-                    : ShadCNTheme.mutedForeground,
-              ),
-            ),
+            _buildBodyText(context, checkInstructionText),
           ],
           if (content.checkMailingAddress.isNotEmpty) ...[
             const SizedBox(height: ShadCNTheme.space3),
@@ -531,152 +547,32 @@ class _DonateScreenState extends State<DonateScreen> {
     );
   }
 
-  /// Builds a card for online donation methods (PayPal, Credit Card, Matching Grants).
-  /// Each method shows:
-  /// - An icon and title
-  /// - Instructions on how to donate
-  /// - Optional notes or warnings
-  /// - A button to open the donation link in a browser
-  Widget _buildOnlineMethodCard(
+  /// Builds a method card with optional More Info for an outgoing URL.
+  Widget _buildMethodCard(
     BuildContext context, {
     required String title,
-    String? instruction,
-    String? note,
+    required String instruction,
     String? url,
     required IconData icon,
   }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final bool isPayPal = title == 'PayPal Giving Fund';
-    final bool isCreditCard = title == 'Credit Card';
-    final bool isMatchingGrants = title == 'Matching Grants';
-
-    String? displayInstruction = instruction;
-    String? trailingInstruction;
-
-    // Override body text per request
-    if (isPayPal) {
-      displayInstruction =
-          'To donate ONLINE by PAYPAL GIVING FUND CLICK HERE. Please note: Vidyapith receives the full amount of Paypal Giving Fund donations - no fees are deducted.';
-      trailingInstruction = null;
-      note = null;
-    } else if (isCreditCard) {
-      displayInstruction =
-          'To donate by CREDIT CARD, you can do so HERE. Please note: credit card fees are deducted from such  donations, decreasing the amount received  by  Vidyapith.';
-      trailingInstruction = null;
-      note = null;
-    } else if (isMatchingGrants) {
-      displayInstruction =
-          'If your company provides MATCHING GRANTS for employee donations and you would like to secure a matching gift for Vidyapith, please fill out this Matching Donation Form.';
-      trailingInstruction = null;
-      note = null;
-    }
-
-    final List<Widget> bodyChildren = [];
-
-    if (displayInstruction != null) {
-      bodyChildren.add(const SizedBox(height: ShadCNTheme.space3));
-      bodyChildren.add(
-        Text(
-          displayInstruction,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            height: 1.5,
-            color: isDark
-                ? ShadCNTheme.darkMutedForeground
-                : ShadCNTheme.mutedForeground,
-          ),
-        ),
-      );
-    }
-
-    if (note != null) {
-      bodyChildren.add(const SizedBox(height: ShadCNTheme.space2));
-      bodyChildren.add(
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(ShadCNTheme.space3),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1F2937) : const Color(0xFFEFF6FF),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            note,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: isDark
-                  ? ShadCNTheme.darkMutedForeground
-                  : ShadCNTheme.mutedForeground,
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (trailingInstruction != null && trailingInstruction.isNotEmpty) {
-      bodyChildren.add(const SizedBox(height: ShadCNTheme.space2));
-      bodyChildren.add(
-        Text(
-          trailingInstruction,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            height: 1.5,
-            color: isDark
-                ? ShadCNTheme.darkMutedForeground
-                : ShadCNTheme.mutedForeground,
-          ),
-        ),
-      );
-    }
-
-    if (url != null) {
-      bodyChildren.add(const SizedBox(height: ShadCNTheme.space4));
-      bodyChildren.add(
-        Align(
-          alignment: Alignment.center,
-          child: ShadButton(
-            text: 'Open Link',
-            icon: const Icon(Icons.open_in_new),
-            onPressed: () => _launchExternalUrl(url),
-          ),
-        ),
-      );
-    }
-
     return ShadCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0x2E0B73DA)
-                      : const Color(0xFFE8F1FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.all(ShadCNTheme.space3),
-                child: Icon(
-                  icon,
-                  color: isDark
-                      ? ShadCNTheme.darkCardForeground
-                      : const Color(0xFF0B73DA),
-                ),
+          _buildMethodHeader(context, title: title, icon: icon),
+          const SizedBox(height: ShadCNTheme.space3),
+          _buildBodyText(context, instruction),
+          if (url != null) ...[
+            const SizedBox(height: ShadCNTheme.space4),
+            Align(
+              alignment: Alignment.center,
+              child: ShadButton(
+                text: 'More Info',
+                icon: const Icon(Icons.open_in_new),
+                onPressed: () => _launchExternalUrl(url),
               ),
-              const SizedBox(width: ShadCNTheme.space3),
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: ShadCNTheme.fontSemibold,
-                    color: isDark
-                        ? ShadCNTheme.darkCardForeground
-                        : ShadCNTheme.cardForeground,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          ...bodyChildren,
+            ),
+          ],
         ],
       ),
     );
@@ -716,9 +612,7 @@ class _DonateScreenState extends State<DonateScreen> {
     );
   }
 
-  /// Copies the Zelle email address to the user's clipboard.
-  /// This is called when the user taps the "Copy" button next to the email address.
-  /// Shows a confirmation message that the email was copied.
+  /// Copies an email address to the clipboard and shows confirmation.
   Future<void> _copyToClipboard(String value) async {
     await Clipboard.setData(ClipboardData(text: value));
     if (!mounted) return;

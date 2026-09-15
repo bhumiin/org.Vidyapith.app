@@ -4,42 +4,109 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-/// An image carousel widget that automatically cycles through images.
-/// 
-/// This widget displays a series of images in a swipeable carousel with:
-/// - Automatic image rotation at a configurable interval
-/// - Fade transitions between images
-/// - Page indicators showing which image is currently displayed
-/// - Support for both network images and asset images
-/// - Automatic aspect ratio detection
-/// 
-/// Example usage:
-/// ```dart
-/// PhotoCarousel(
-///   imageUrls: ['https://example.com/image1.jpg', 'assets/image2.png'],
-///   interval: Duration(seconds: 5),
-///   aspectRatio: 16 / 9,
-/// )
-/// ```
+/// Extra time the featured quote slide stays visible beyond [PhotoCarousel.interval].
+const Duration kQuoteSlideExtraDwell = Duration(seconds: 2);
+
+/// A single slide in [PhotoCarousel] — either an image or a quote.
+sealed class CarouselSlide {
+  const CarouselSlide();
+}
+
+/// Image slide backed by a network URL or asset path.
+class CarouselImageSlide extends CarouselSlide {
+  /// Creates an image slide for [url].
+  const CarouselImageSlide(this.url);
+
+  /// Network URL or asset path starting with `assets/`.
+  final String url;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CarouselImageSlide && other.url == url;
+
+  @override
+  int get hashCode => url.hashCode;
+}
+
+/// Text slide showing a featured quote and optional author.
+class CarouselQuoteSlide extends CarouselSlide {
+  /// Creates a quote slide.
+  const CarouselQuoteSlide({required this.text, this.author});
+
+  /// Quote body text.
+  final String text;
+
+  /// Optional attribution (e.g. author name).
+  final String? author;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CarouselQuoteSlide &&
+          other.text == text &&
+          other.author == author;
+
+  @override
+  int get hashCode => Object.hash(text, author);
+}
+
+/// Returns how long [slide] should remain visible given the base [interval].
+///
+/// Quote slides dwell [kQuoteSlideExtraDwell] longer than image slides.
+Duration carouselDwellForSlide(CarouselSlide slide, Duration interval) {
+  if (slide is CarouselQuoteSlide) {
+    return interval + kQuoteSlideExtraDwell;
+  }
+  return interval;
+}
+
+/// Builds image [CarouselSlide]s from a list of URLs.
+List<CarouselSlide> carouselSlidesFromUrls(List<String> imageUrls) {
+  return imageUrls.map(CarouselImageSlide.new).toList(growable: false);
+}
+
+/// An image/quote carousel that automatically cycles through slides.
+///
+/// Supports:
+/// - Image and quote slides
+/// - Automatic rotation with longer dwell on quote slides
+/// - Fade transitions and page indicators
+/// - Network and asset images
 class PhotoCarousel extends StatefulWidget {
+  /// Creates a carousel from [slides].
   const PhotoCarousel({
     super.key,
-    required this.imageUrls,
+    required this.slides,
     this.interval = const Duration(seconds: 3),
     this.aspectRatio = 16 / 9,
     this.borderRadius = 16,
     this.isDark = false,
   });
 
-  /// List of image URLs (network URLs or asset paths starting with 'assets/')
-  final List<String> imageUrls;
-  /// Time between automatic image transitions (default: 3 seconds)
+  /// Convenience constructor for image-only carousels.
+  PhotoCarousel.images({
+    super.key,
+    required List<String> imageUrls,
+    this.interval = const Duration(seconds: 3),
+    this.aspectRatio = 16 / 9,
+    this.borderRadius = 16,
+    this.isDark = false,
+  }) : slides = carouselSlidesFromUrls(imageUrls);
+
+  /// Slides to display (images and/or quotes).
+  final List<CarouselSlide> slides;
+
+  /// Base dwell time between automatic transitions (default: 3 seconds).
   final Duration interval;
-  /// Aspect ratio of the carousel container (default: 16/9)
+
+  /// Aspect ratio of the carousel container (default: 16/9).
   final double aspectRatio;
-  /// Border radius for rounded corners (default: 16)
+
+  /// Border radius for rounded corners (default: 16).
   final double borderRadius;
-  /// Whether to use dark theme colors
+
+  /// Whether to use dark theme colors.
   final bool isDark;
 
   @override
@@ -47,49 +114,41 @@ class PhotoCarousel extends StatefulWidget {
 }
 
 class _PhotoCarouselState extends State<PhotoCarousel> {
-  // Controller for managing page transitions
   late final PageController _pageController;
-  // Timer for automatic image rotation
   Timer? _autoPlayTimer;
-  // Current image index being displayed
   int _currentIndex = 0;
-  // Stores aspect ratios for each image (calculated as images load)
   late List<double?> _imageAspectRatios;
+
+  List<CarouselSlide> get _slides => widget.slides;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
-    // Initialize aspect ratio list with null values (will be filled as images load)
-    _imageAspectRatios = List<double?>.filled(widget.imageUrls.length, null);
-    _resolveAllAspectRatios(); // Start loading image dimensions
-    _startAutoPlay(); // Begin automatic rotation
+    _imageAspectRatios = List<double?>.filled(_slides.length, null);
+    _resolveAllAspectRatios();
+    _startAutoPlay();
   }
 
   @override
   void didUpdateWidget(covariant PhotoCarousel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.interval != oldWidget.interval ||
-        widget.imageUrls.length != oldWidget.imageUrls.length ||
-        !listEquals(widget.imageUrls, oldWidget.imageUrls)) {
-      if (widget.imageUrls.length != oldWidget.imageUrls.length ||
-          !listEquals(widget.imageUrls, oldWidget.imageUrls)) {
-        _imageAspectRatios =
-            List<double?>.filled(widget.imageUrls.length, null);
+    final slidesChanged = !listEquals(oldWidget.slides, widget.slides);
+    if (widget.interval != oldWidget.interval || slidesChanged) {
+      if (slidesChanged) {
+        _imageAspectRatios = List<double?>.filled(_slides.length, null);
         _resolveAllAspectRatios();
-        if (_currentIndex >= widget.imageUrls.length) {
-          _currentIndex = widget.imageUrls.isEmpty
-              ? 0
-              : widget.imageUrls.length - 1;
+        if (_currentIndex >= _slides.length) {
+          _currentIndex = _slides.isEmpty ? 0 : _slides.length - 1;
         }
       }
       _restartAutoPlay();
     }
 
-    if (widget.imageUrls.isEmpty) {
+    if (_slides.isEmpty) {
       _currentIndex = 0;
-    } else if (_currentIndex >= widget.imageUrls.length) {
-      _currentIndex = widget.imageUrls.length - 1;
+    } else if (_currentIndex >= _slides.length) {
+      _currentIndex = _slides.length - 1;
     }
   }
 
@@ -100,16 +159,20 @@ class _PhotoCarouselState extends State<PhotoCarousel> {
     super.dispose();
   }
 
-  /// Starts the automatic image rotation timer
-  /// Only starts if there's more than one image
+  /// Starts a one-shot autoplay timer using the current slide's dwell.
   void _startAutoPlay() {
-    if (widget.imageUrls.length <= 1) {
-      return; // No need to auto-play with only one image
+    if (_slides.length <= 1) {
+      return;
     }
 
-    _autoPlayTimer?.cancel(); // Cancel any existing timer
-    // Create a periodic timer that moves to the next page every interval
-    _autoPlayTimer = Timer.periodic(widget.interval, (_) => _goToNextPage());
+    _autoPlayTimer?.cancel();
+    final dwell = carouselDwellForSlide(_slides[_currentIndex], widget.interval);
+    _autoPlayTimer = Timer(dwell, () {
+      _goToNextPage();
+      if (mounted) {
+        _startAutoPlay();
+      }
+    });
   }
 
   void _restartAutoPlay() {
@@ -117,82 +180,67 @@ class _PhotoCarouselState extends State<PhotoCarousel> {
     _startAutoPlay();
   }
 
-  /// Advances to the next image in the carousel
-  /// Wraps around to the first image after the last one
   void _goToNextPage() {
-    if (!mounted || widget.imageUrls.length <= 1) {
-      return; // Don't advance if widget is disposed or only one image
+    if (!mounted || _slides.length <= 1) {
+      return;
     }
 
-    // Calculate next page index with wraparound (0, 1, 2, ..., last, 0, ...)
-    final nextPage = (_currentIndex + 1) % widget.imageUrls.length;
+    final nextPage = (_currentIndex + 1) % _slides.length;
 
-    // Animate to next page if the controller is ready
     if (_pageController.hasClients) {
       _pageController.animateToPage(
         nextPage,
-        duration: const Duration(milliseconds: 600), // Smooth transition
-        curve: Curves.easeInOut, // Easing animation
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOut,
       );
     }
   }
 
   void _resolveAllAspectRatios() {
-    for (final entry in widget.imageUrls.asMap().entries) {
-      _resolveAspectRatio(entry.key, entry.value);
+    for (final entry in _slides.asMap().entries) {
+      final slide = entry.value;
+      if (slide is CarouselImageSlide) {
+        _resolveAspectRatio(entry.key, slide.url);
+      }
     }
   }
 
-  /// Loads an image and calculates its aspect ratio (width / height)
-  /// This helps the carousel size itself appropriately
   void _resolveAspectRatio(int index, String url) {
-    // Choose the right image provider based on URL type
     final ImageProvider provider = url.startsWith('assets/')
-        ? AssetImage(url) // Local asset file
-        : NetworkImage(url); // Network URL
+        ? AssetImage(url)
+        : NetworkImage(url);
 
-    // Resolve the image to get its dimensions
-    final ImageStream stream =
-        provider.resolve(const ImageConfiguration());
+    final ImageStream stream = provider.resolve(const ImageConfiguration());
     late final ImageStreamListener listener;
-    // Listen for when the image loads to get its dimensions
     listener = ImageStreamListener((ImageInfo info, bool _) {
-      // Calculate aspect ratio: width divided by height
       final ratio = info.image.width / info.image.height;
       if (mounted) {
         setState(() {
-          // Store the aspect ratio for this image
           if (index < _imageAspectRatios.length) {
             _imageAspectRatios[index] = ratio;
           }
         });
       }
-      stream.removeListener(listener); // Clean up listener
+      stream.removeListener(listener);
     }, onError: (Object _, StackTrace? __) {
-      // Handle errors gracefully (just remove listener, don't update ratio)
       stream.removeListener(listener);
     });
 
     stream.addListener(listener);
   }
 
-  /// Calculates the container aspect ratio based on loaded images
-  /// Uses the minimum aspect ratio to ensure all images fit properly
   double _containerAspectRatio() {
-    // Get all successfully loaded aspect ratios
     final resolved = _imageAspectRatios.whereType<double>().toList();
     if (resolved.isEmpty) {
-      // If no images loaded yet, use the default aspect ratio
       return widget.aspectRatio;
     }
-    // Use the minimum ratio so the container fits the narrowest image
     final double minRatio = resolved.reduce(math.min);
     return minRatio;
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.imageUrls.isEmpty) {
+    if (_slides.isEmpty) {
       return _buildEmptyState(context);
     }
 
@@ -204,57 +252,70 @@ class _PhotoCarouselState extends State<PhotoCarousel> {
         color: widget.isDark
             ? const Color(0xFF101922)
             : const Color(0xFFF5F7F8),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            PageView.builder(
-              controller: _pageController,
-              itemCount: widget.imageUrls.length,
-              onPageChanged: (index) {
-                setState(() => _currentIndex = index);
-              },
-              itemBuilder: (context, index) {
-                return _FadingImage(
-                  controller: _pageController,
-                  index: index,
-                  imageUrl: widget.imageUrls[index],
-                  isDark: widget.isDark,
-                );
-              },
-            ),
-            // Page indicator dots at the bottom showing current image
-            Positioned(
-              bottom: 12,
-              left: 0,
-              right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(widget.imageUrls.length, (index) {
-                  final isActive = index == _currentIndex; // Highlight current image
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    height: 6,
-                    // Active dot is wider (16px) than inactive dots (6px)
-                    width: isActive ? 16 : 6,
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? Colors.white // Full opacity for active dot
-                          : Colors.white.withOpacity(0.5), // Semi-transparent for inactive
-                      borderRadius: BorderRadius.circular(999), // Fully rounded
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 2,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(widget.borderRadius),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              PageView.builder(
+                controller: _pageController,
+                itemCount: _slides.length,
+                onPageChanged: (index) {
+                  setState(() => _currentIndex = index);
+                  _restartAutoPlay();
+                },
+                itemBuilder: (context, index) {
+                  final slide = _slides[index];
+                  return switch (slide) {
+                    CarouselImageSlide(:final url) => _FadingImage(
+                        controller: _pageController,
+                        index: index,
+                        imageUrl: url,
+                        isDark: widget.isDark,
+                      ),
+                    CarouselQuoteSlide(:final text, :final author) =>
+                      _QuoteSlidePage(
+                        controller: _pageController,
+                        index: index,
+                        text: text,
+                        author: author,
+                        isDark: widget.isDark,
+                      ),
+                  };
+                },
               ),
-            ),
-          ],
+              Positioned(
+                bottom: 12,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(_slides.length, (index) {
+                    final isActive = index == _currentIndex;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      height: 6,
+                      width: isActive ? 16 : 6,
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? Colors.white
+                            : Colors.white.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(999),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 2,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -303,8 +364,86 @@ class _PhotoCarouselState extends State<PhotoCarousel> {
   }
 }
 
-/// A helper widget that fades images in/out as the carousel transitions
-/// Creates a smooth crossfade effect between images
+/// Quote panel with the same fade behavior as image slides.
+class _QuoteSlidePage extends StatelessWidget {
+  const _QuoteSlidePage({
+    required this.controller,
+    required this.index,
+    required this.text,
+    required this.author,
+    required this.isDark,
+  });
+
+  final PageController controller;
+  final int index;
+  final String text;
+  final String? author;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, child) {
+        double opacity = 1.0;
+        if (controller.hasClients && controller.position.hasContentDimensions) {
+          final double? page = controller.page;
+          if (page != null) {
+            opacity = (1.0 - (page - index).abs()).clamp(0.0, 1.0);
+          } else {
+            opacity = index == controller.initialPage ? 1.0 : 0.0;
+          }
+        } else {
+          opacity = index == 0 ? 1.0 : 0.0;
+        }
+
+        return Opacity(
+          opacity: Curves.easeInOut.transform(opacity),
+          child: child,
+        );
+      },
+      child: ColoredBox(
+        color: isDark ? const Color(0xFF1F2937) : const Color(0xFFE8EEF5),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 36),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                text,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isDark
+                      ? const Color(0xFFE5E7EB)
+                      : const Color(0xFF4B5563),
+                  fontSize: 16,
+                  fontStyle: FontStyle.italic,
+                  height: 1.45,
+                ),
+              ),
+              if (author != null && author!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  '- $author',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: isDark
+                        ? const Color(0xFF9CA3AF)
+                        : const Color(0xFF6B7280),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Fades images in/out as the carousel transitions.
 class _FadingImage extends StatelessWidget {
   const _FadingImage({
     required this.controller,
@@ -345,8 +484,7 @@ class _FadingImage extends StatelessWidget {
   }
 }
 
-/// A widget that displays network or asset images with loading and error states
-/// Shows a loading spinner while images load and a broken image icon on errors
+/// Displays network or asset images with loading and error states.
 class _NetworkImageWithPlaceholder extends StatelessWidget {
   const _NetworkImageWithPlaceholder({required this.url, required this.isDark});
 
@@ -357,9 +495,8 @@ class _NetworkImageWithPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backgroundColor = isDark
-        ? const Color(0xFF101922)
-        : const Color(0xFFF5F7F8);
+    final backgroundColor =
+        isDark ? const Color(0xFF101922) : const Color(0xFFF5F7F8);
 
     return DecoratedBox(
       decoration: BoxDecoration(color: backgroundColor),

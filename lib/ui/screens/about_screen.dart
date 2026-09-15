@@ -246,7 +246,7 @@ class _AboutScreenState extends State<AboutScreen> {
         // Adds horizontal padding (left and right spacing)
         padding: const EdgeInsets.symmetric(horizontal: ShadCNTheme.space4),
         // Uses the PhotoCarousel component to display swipeable images
-        child: PhotoCarousel(imageUrls: _carouselImages, isDark: isDark),
+        child: PhotoCarousel.images(imageUrls: _carouselImages, isDark: isDark),
       ),
     );
   }

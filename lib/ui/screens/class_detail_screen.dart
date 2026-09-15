@@ -37,9 +37,6 @@ class ClassDetailScreen extends StatefulWidget {
 }
 
 class _ClassDetailScreenState extends State<ClassDetailScreen> {
-  static const String _curricularThumbnailUrl =
-      'https://www.vidyapith.org/uploads/5/2/1/3/52135817/6185815.jpeg';
-
   late final WebsiteScraper _scraper;
   Future<CurricularClassesContent>? _curricularFuture;
   Future<MusicClassesContent>? _musicFuture;
@@ -58,9 +55,7 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
     super.initState();
     _scraper = WebsiteScraper();
     if (_isCurricular) {
-      _curricularFuture = _scraper.fetchCurricularClassesContent(
-        thumbnailOverride: _curricularThumbnailUrl,
-      );
+      _curricularFuture = _scraper.fetchCurricularClassesContent();
     } else if (_isMusicClasses) {
       _musicFuture = _scraper.fetchMusicClassesContent();
     } else if (_isSummerCamp) {
@@ -115,11 +110,9 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
   }
 
   /// Builds the content for Curricular Classes.
-  /// Displays:
-  /// - A thumbnail image of the classes
-  /// - Information about classes for youngsters (Kindergarten through 12th Grade)
-  /// - Information about classes for adults
-  /// Each section shows schedules, descriptions, and other details.
+  ///
+  /// Displays music-style cards for youngsters and adults: section image,
+  /// exact website title, then the full paragraph description.
   Widget _buildCurricularContent(
     CurricularClassesContent content,
     ThemeData theme,
@@ -130,50 +123,9 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (content.thumbnailUrl.isNotEmpty)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(ShadCNTheme.radiusLg),
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: Image.network(
-                  content.thumbnailUrl,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) {
-                      return child;
-                    }
-                    return Container(
-                      color: isDark ? ShadCNTheme.darkMuted : ShadCNTheme.muted,
-                      alignment: Alignment.center,
-                      child: const CircularProgressIndicator(strokeWidth: 2),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: isDark ? ShadCNTheme.darkMuted : ShadCNTheme.muted,
-                      alignment: Alignment.center,
-                      child: Icon(
-                        Icons.broken_image_outlined,
-                        color: isDark
-                            ? ShadCNTheme.darkMutedForeground
-                            : ShadCNTheme.mutedForeground,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          if (content.thumbnailUrl.isNotEmpty)
-            const SizedBox(height: ShadCNTheme.space4),
-          _buildSection(
-            content.youngstersSection,
-            theme,
-            isDark,
-            overrideTitle:
-                'Vidyapith Curricular Classes for Kindergarten through 12th Grade',
-          ),
+          _buildCurricularSection(content.youngstersSection, theme, isDark),
           const SizedBox(height: ShadCNTheme.space3),
-          _buildSection(content.adultsSection, theme, isDark),
+          _buildCurricularSection(content.adultsSection, theme, isDark),
           const SizedBox(height: ShadCNTheme.space4),
           CopyrightWidget(),
         ],
@@ -181,39 +133,17 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
     );
   }
 
-  Widget _buildSection(
+  /// Builds one curricular section card (image, title, full description).
+  Widget _buildCurricularSection(
     CurricularClassesSection section,
     ThemeData theme,
-    bool isDark, {
-    String? overrideTitle,
-  }) {
-    List<String> paragraphs = section.description
-        .split(RegExp(r'(?<=[.!?])\s+'))
-        .map((line) => line.trim())
-        .where((line) => line.isNotEmpty)
-        .toList();
-
-    // Remove the duplicate "for Youngsters, Kindergarten through to 12th Grade" text
-    if (overrideTitle != null) {
-      paragraphs = paragraphs.where((paragraph) {
-        final lower = paragraph.toLowerCase();
-        return !lower.contains('for youngsters') &&
-            !lower.contains('kindergarten through to 12th grade');
-      }).toList();
-    }
-
-    final String displayTitle = overrideTitle ?? section.title;
+    bool isDark,
+  ) {
     final titleStyle = theme.textTheme.titleLarge?.copyWith(
       fontWeight: ShadCNTheme.fontBold,
       color: isDark
           ? ShadCNTheme.darkCardForeground
           : ShadCNTheme.cardForeground,
-    );
-    final scheduleStyle = theme.textTheme.bodyMedium?.copyWith(
-      fontStyle: FontStyle.italic,
-      color: isDark
-          ? ShadCNTheme.darkMutedForeground
-          : ShadCNTheme.mutedForeground,
     );
     final bodyStyle = theme.textTheme.bodyMedium?.copyWith(
       color: isDark
@@ -227,18 +157,49 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(displayTitle, style: titleStyle),
-          if (section.schedule.isNotEmpty) ...[
-            const SizedBox(height: ShadCNTheme.space2),
-            Text(section.schedule, style: scheduleStyle),
-          ],
-          if (paragraphs.isNotEmpty) ...[
+          if (section.imageUrl.isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(ShadCNTheme.radiusLg),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Container(
+                  color: isDark ? ShadCNTheme.darkCard : ShadCNTheme.card,
+                  alignment: Alignment.center,
+                  child: Image.network(
+                    section.imageUrl,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) {
+                        return child;
+                      }
+                      return Container(
+                        color: isDark ? ShadCNTheme.darkCard : ShadCNTheme.card,
+                        alignment: Alignment.center,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: isDark ? ShadCNTheme.darkCard : ShadCNTheme.card,
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          color: isDark
+                              ? ShadCNTheme.darkMutedForeground
+                              : ShadCNTheme.mutedForeground,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(height: ShadCNTheme.space3),
-            for (int i = 0; i < paragraphs.length; i++) ...[
-              Text(paragraphs[i], style: bodyStyle),
-              if (i != paragraphs.length - 1)
-                const SizedBox(height: ShadCNTheme.space2),
-            ],
+          ],
+          Text(section.title, style: titleStyle),
+          if (section.description.isNotEmpty) ...[
+            const SizedBox(height: ShadCNTheme.space3),
+            Text(section.description, style: bodyStyle),
           ],
         ],
       ),

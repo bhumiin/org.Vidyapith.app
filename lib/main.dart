@@ -22,6 +22,7 @@ import 'ui/screens/events_screen.dart';
 import 'ui/screens/calendar_screen.dart';
 import 'ui/screens/contact_screen.dart';
 import 'ui/screens/splash_screen.dart';
+import 'core/vidyapith_urls.dart';
 import 'services/daily_refresh.dart';
 
 /// Main entry point of the application
@@ -97,8 +98,7 @@ class _MainScreenState extends State<MainScreen> {
     {'title': 'Events', 'url': 'https://www.vidyapith.org/events'},
     {
       'title': 'Calendar',
-      'url':
-          'https://www.vidyapith.org/uploads/5/2/1/3/52135817/v9_final_dates_vp_calendar_2025_n_2024.11.12.pdf',
+      'url': vidyapithCalendarPageUrl(),
     },
     {'title': 'Contact', 'url': 'https://www.vidyapith.org/contact'},
   ];

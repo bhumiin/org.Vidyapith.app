@@ -29,6 +29,29 @@ class ThoughtOfTheDay {
       );
 }
 
+/// Featured homepage quote shown above Thought of the Day on vidyapith.org.
+///
+/// Displayed as the first slide in the home photo carousel.
+class FeaturedQuote {
+  /// The main quote text.
+  final String text;
+
+  /// Optional author attribution (e.g. "Swami Vivekananda").
+  final String? author;
+
+  /// Creates a new FeaturedQuote.
+  const FeaturedQuote({required this.text, this.author});
+
+  /// Converts this object to JSON format for storage.
+  Map<String, dynamic> toJson() => {'text': text, 'author': author};
+
+  /// Creates a FeaturedQuote from JSON data.
+  factory FeaturedQuote.fromJson(Map<String, dynamic> json) => FeaturedQuote(
+        text: json['text'] as String? ?? '',
+        author: json['author'] as String?,
+      );
+}
+
 /// Represents a single upcoming event that will be displayed on the home screen.
 /// 
 /// This is different from CalendarEvent - this is specifically for
@@ -56,6 +79,16 @@ class UpcomingEvent {
     title: json['title'] as String? ?? '',
     details: json['details'] as String?,
   );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UpcomingEvent &&
+          other.title == title &&
+          other.details == details;
+
+  @override
+  int get hashCode => Object.hash(title, details);
 }
 
 /// Represents a dynamically detected link from the homepage.
@@ -110,6 +143,10 @@ class WebsiteContent {
   /// The daily thought/quote, if available.
   /// Can be null if no thought is available for the day.
   final ThoughtOfTheDay? thoughtOfTheDay;
+
+  /// Featured quote above Thought of the Day on the homepage.
+  /// Shown as the first photo-carousel slide when available.
+  final FeaturedQuote? featuredQuote;
   
   /// List of upcoming events to highlight on the home screen.
   /// Defaults to an empty list if there are no upcoming events.
@@ -119,10 +156,9 @@ class WebsiteContent {
   /// These are typically photos of recent events or activities.
   final List<String> carouselImages;
   
-  /// Dynamically detected link from the homepage (if any).
-  /// This represents a new clickable link found on the homepage that is
-  /// not already in the Quick Links section.
-  final DynamicLink? dynamicLink;
+  /// Dynamically detected announcement links from the homepage.
+  /// Consecutive qualifying homepage links not already in Quick Links.
+  final List<DynamicLink> dynamicLinks;
   
   /// Timestamp when this content was fetched from the website.
   /// Used to determine if we need to refresh the data.
@@ -133,9 +169,10 @@ class WebsiteContent {
   /// All fields except [fetchedAt] are optional and have default values.
   const WebsiteContent({
     this.thoughtOfTheDay,
+    this.featuredQuote,
     this.upcomingEvents = const [],
     this.carouselImages = const [],
-    this.dynamicLink,
+    this.dynamicLinks = const [],
     required this.fetchedAt,
   });
 
@@ -145,9 +182,10 @@ class WebsiteContent {
   /// using their respective toJson() methods.
   Map<String, dynamic> toJson() => {
     'thoughtOfTheDay': thoughtOfTheDay?.toJson(),
+    'featuredQuote': featuredQuote?.toJson(),
     'upcomingEvents': upcomingEvents.map((e) => e.toJson()).toList(),
     'carouselImages': carouselImages,
-    'dynamicLink': dynamicLink?.toJson(),
+    'dynamicLinks': dynamicLinks.map((e) => e.toJson()).toList(),
     'fetchedAt': fetchedAt.toIso8601String(),
   };
 
@@ -155,11 +193,17 @@ class WebsiteContent {
   /// 
   /// Reconstructs all nested objects from their JSON representations.
   /// Handles missing or invalid data gracefully with default values.
+  /// Accepts legacy `dynamicLink` (single object) for older cache entries.
   factory WebsiteContent.fromJson(Map<String, dynamic> json) => WebsiteContent(
     // Convert thoughtOfTheDay from JSON if it exists, otherwise null
     thoughtOfTheDay: json['thoughtOfTheDay'] != null
         ? ThoughtOfTheDay.fromJson(
             Map<String, dynamic>.from(json['thoughtOfTheDay'] as Map),
+          )
+        : null,
+    featuredQuote: json['featuredQuote'] != null
+        ? FeaturedQuote.fromJson(
+            Map<String, dynamic>.from(json['featuredQuote'] as Map),
           )
         : null,
     // Convert each upcoming event from JSON to UpcomingEvent object
@@ -171,74 +215,92 @@ class WebsiteContent {
         .map((e) => e as String? ?? '')
         .where((e) => e.isNotEmpty)
         .toList(),
-    // Convert dynamicLink from JSON if it exists, otherwise null
-    dynamicLink: json['dynamicLink'] != null
-        ? DynamicLink.fromJson(
-            Map<String, dynamic>.from(json['dynamicLink'] as Map),
-          )
-        : null,
+    dynamicLinks: _parseDynamicLinksFromJson(json),
     // Parse the fetchedAt timestamp, or use epoch zero if invalid
     fetchedAt:
         DateTime.tryParse(json['fetchedAt'] as String? ?? '') ??
         DateTime.fromMillisecondsSinceEpoch(0),
   );
+
+  /// Parses [dynamicLinks] from JSON, with fallback to legacy [dynamicLink].
+  static List<DynamicLink> _parseDynamicLinksFromJson(Map<String, dynamic> json) {
+    final rawList = json['dynamicLinks'];
+    if (rawList is List) {
+      return rawList
+          .whereType<Map>()
+          .map((e) => DynamicLink.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+    final legacy = json['dynamicLink'];
+    if (legacy is Map) {
+      return [
+        DynamicLink.fromJson(Map<String, dynamic>.from(legacy)),
+      ];
+    }
+    return const [];
+  }
 }
 
 /// Contains all content for the donations screen.
 /// 
 /// This class stores information about different donation methods available:
-/// Zelle, check, PayPal, credit card, and matching grants. Each method
-/// has its own instructions, URLs, and other relevant information.
+/// Donation methods scraped from the donate page.
+///
+/// Covers Zelle, appreciated securities, matching grants, recurring monthly,
+/// PayPal Giving Fund, and check mailing.
 class DonateContent {
   /// Introductory paragraphs explaining the donation process.
   /// Usually displayed at the top of the donations screen.
   final List<String> introParagraphs;
-  
+
   /// Email address for Zelle donations.
   final String? zelleEmail;
-  
+
   /// Instructions on how to donate using Zelle.
   final String? zelleInstruction;
-  
+
   /// URL of the QR code image for Zelle donations.
   final String? zelleQrImageUrl;
-  
+
+  /// Instructions for donating appreciated financial securities.
+  final String? securitiesInstruction;
+
+  /// Email address to request brokerage transfer information.
+  final String? securitiesEmail;
+
   /// Instructions on how to donate by check.
   final String? checkInstruction;
-  
+
   /// Mailing address where checks should be sent.
   /// Each line is a separate string in the list.
   final List<String> checkMailingAddress;
-  
+
   /// Instructions for PayPal Giving donations.
   final String? paypalGivingInstruction;
-  
+
   /// URL to the PayPal Giving page.
   final String? paypalGivingUrl;
-  
+
   /// Additional notes about PayPal Giving donations.
   final String? paypalGivingNote;
-  
-  /// Instructions for credit card donations.
-  final String? creditCardInstruction;
-  
-  /// URL to the credit card donation page.
-  final String? creditCardUrl;
-  
-  /// Additional notes about credit card donations.
-  final String? creditCardNote;
-  
+
+  /// Instructions for recurring monthly donations (also covers CC/Venmo).
+  final String? recurringInstruction;
+
+  /// URL for recurring monthly / one-time PayPal donate button.
+  final String? recurringUrl;
+
   /// Instructions about employer matching grants.
   final String? matchingGrantInstruction;
-  
+
   /// URL to the matching grant form.
   final String? matchingFormUrl;
-  
+
   /// Timestamp when this donation content was fetched from the website.
   final DateTime fetchedAt;
 
   /// Creates a new DonateContent object.
-  /// 
+  ///
   /// Most fields are optional since not all donation methods may be available.
   /// Only [fetchedAt] is required to track when the data was last updated.
   const DonateContent({
@@ -246,14 +308,15 @@ class DonateContent {
     this.zelleEmail,
     this.zelleInstruction,
     this.zelleQrImageUrl,
+    this.securitiesInstruction,
+    this.securitiesEmail,
     this.checkInstruction,
     this.checkMailingAddress = const [],
     this.paypalGivingInstruction,
     this.paypalGivingUrl,
     this.paypalGivingNote,
-    this.creditCardInstruction,
-    this.creditCardUrl,
-    this.creditCardNote,
+    this.recurringInstruction,
+    this.recurringUrl,
     this.matchingGrantInstruction,
     this.matchingFormUrl,
     required this.fetchedAt,
@@ -265,24 +328,24 @@ class DonateContent {
         'zelleEmail': zelleEmail,
         'zelleInstruction': zelleInstruction,
         'zelleQrImageUrl': zelleQrImageUrl,
+        'securitiesInstruction': securitiesInstruction,
+        'securitiesEmail': securitiesEmail,
         'checkInstruction': checkInstruction,
         'checkMailingAddress': checkMailingAddress,
         'paypalGivingInstruction': paypalGivingInstruction,
         'paypalGivingUrl': paypalGivingUrl,
         'paypalGivingNote': paypalGivingNote,
-        'creditCardInstruction': creditCardInstruction,
-        'creditCardUrl': creditCardUrl,
-        'creditCardNote': creditCardNote,
+        'recurringInstruction': recurringInstruction,
+        'recurringUrl': recurringUrl,
         'matchingGrantInstruction': matchingGrantInstruction,
         'matchingFormUrl': matchingFormUrl,
         'fetchedAt': fetchedAt.toIso8601String(),
       };
 
   /// Creates a DonateContent from JSON data.
-  /// 
+  ///
   /// Filters out any empty strings from list fields to ensure clean data.
   factory DonateContent.fromJson(Map<String, dynamic> json) => DonateContent(
-        // Convert intro paragraphs, filtering out empty strings
         introParagraphs: (json['introParagraphs'] as List<dynamic>? ?? [])
             .map((e) => e as String? ?? '')
             .where((e) => e.isNotEmpty)
@@ -290,8 +353,9 @@ class DonateContent {
         zelleEmail: json['zelleEmail'] as String?,
         zelleInstruction: json['zelleInstruction'] as String?,
         zelleQrImageUrl: json['zelleQrImageUrl'] as String?,
+        securitiesInstruction: json['securitiesInstruction'] as String?,
+        securitiesEmail: json['securitiesEmail'] as String?,
         checkInstruction: json['checkInstruction'] as String?,
-        // Convert mailing address lines, filtering out empty strings
         checkMailingAddress:
             (json['checkMailingAddress'] as List<dynamic>? ?? [])
                 .map((e) => e as String? ?? '')
@@ -300,12 +364,10 @@ class DonateContent {
         paypalGivingInstruction: json['paypalGivingInstruction'] as String?,
         paypalGivingUrl: json['paypalGivingUrl'] as String?,
         paypalGivingNote: json['paypalGivingNote'] as String?,
-        creditCardInstruction: json['creditCardInstruction'] as String?,
-        creditCardUrl: json['creditCardUrl'] as String?,
-        creditCardNote: json['creditCardNote'] as String?,
+        recurringInstruction: json['recurringInstruction'] as String?,
+        recurringUrl: json['recurringUrl'] as String?,
         matchingGrantInstruction: json['matchingGrantInstruction'] as String?,
         matchingFormUrl: json['matchingFormUrl'] as String?,
-        // Parse the timestamp, or use epoch zero if invalid
         fetchedAt:
             DateTime.tryParse(json['fetchedAt'] as String? ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0),
@@ -313,50 +375,51 @@ class DonateContent {
 }
 
 /// Represents information about a section of curricular classes.
-/// 
+///
 /// This could be for "Youngsters" or "Adults" sections, each with
-/// their own title, schedule, and description.
+/// their own title, description, and section image.
 class CurricularClassesSection {
-  /// The title of this section (e.g., "Youngsters Classes", "Adults Classes").
+  /// The title of this section (e.g., website heading for youngsters or adults).
   final String title;
-  
-  /// The class schedule (e.g., "Monday - Friday, 4:00 PM - 6:00 PM").
+
+  /// Reserved for schedule text; curricular scrape leaves this empty and puts
+  /// the full website paragraph in [description].
   final String schedule;
-  
-  /// A detailed description of what this section offers.
+
+  /// Full body paragraph for this section (schedule + curriculum copy).
   final String description;
 
+  /// URL of the image shown with this section.
+  final String imageUrl;
+
   /// Creates a new CurricularClassesSection.
-  /// 
+  ///
   /// All fields are required.
   const CurricularClassesSection({
     required this.title,
     required this.schedule,
     required this.description,
+    required this.imageUrl,
   });
 }
 
 /// Contains all content for the curricular classes screen.
-/// 
-/// This includes information about both youngsters and adults classes,
-/// plus a thumbnail image to display.
+///
+/// This includes information about both youngsters and adults classes.
+/// Each section carries its own image URL.
 class CurricularClassesContent {
   /// Information about the youngsters classes section.
   final CurricularClassesSection youngstersSection;
-  
+
   /// Information about the adults classes section.
   final CurricularClassesSection adultsSection;
-  
-  /// URL of the thumbnail image to display for curricular classes.
-  final String thumbnailUrl;
 
   /// Creates a new CurricularClassesContent.
-  /// 
+  ///
   /// All fields are required.
   const CurricularClassesContent({
     required this.youngstersSection,
     required this.adultsSection,
-    required this.thumbnailUrl,
   });
 }
 
@@ -598,59 +661,45 @@ class BookstoreContent {
 
 
 /// Contains all content for the admissions screen.
-/// 
-/// Stores information about the admissions process, including multiple
-/// sections of information, form URLs, and mailing address.
+///
+/// Stores information about the admissions process as rich paragraphs that
+/// mirror the website layout (I. / II. / III.), plus form URLs and address.
 class AdmissionsContent {
-  /// First section of admissions information.
-  /// Can be null if not available.
-  final String? sectionI;
-  
-  /// Second section of admissions information.
-  /// Can be null if not available.
-  final String? sectionII;
-  
-  /// Third section of admissions information.
-  /// Can be null if not available.
-  final String? sectionIII;
-  
-  /// Fourth section of admissions information.
-  /// Can be null if not available.
-  final String? sectionIV;
-  
+  /// Body paragraphs for the admissions notice (typically I., II., III.).
+  ///
+  /// Each paragraph is a list of styled text spans.
+  final List<AdmissionsParagraph> paragraphs;
+
   /// URL to the Kindergarten admission form.
   final String? kgFormUrl;
-  
+
   /// URL to an alternate route admission form.
   final String? alternateRouteFormUrl;
-  
+
   /// Mailing address for admissions, with each line as a separate string.
   /// Defaults to an empty list if not provided.
   final List<String> addressLines;
-  
+
   /// Timestamp when this admissions content was fetched from the website.
   final DateTime fetchedAt;
 
   /// Creates a new AdmissionsContent.
-  /// 
+  ///
   /// Most fields are optional; only [fetchedAt] is required.
   const AdmissionsContent({
-    this.sectionI,
-    this.sectionII,
-    this.sectionIII,
-    this.sectionIV,
+    this.paragraphs = const [],
     this.kgFormUrl,
     this.alternateRouteFormUrl,
     this.addressLines = const [],
     required this.fetchedAt,
   });
 
+  /// Whether there is any displayable admissions body text.
+  bool get hasBody => paragraphs.any((p) => p.spans.any((s) => s.text.trim().isNotEmpty));
+
   /// Converts this AdmissionsContent to JSON format for storage.
   Map<String, dynamic> toJson() => {
-    'sectionI': sectionI,
-    'sectionII': sectionII,
-    'sectionIII': sectionIII,
-    'sectionIV': sectionIV,
+    'paragraphs': paragraphs.map((p) => p.toJson()).toList(),
     'kgFormUrl': kgFormUrl,
     'alternateRouteFormUrl': alternateRouteFormUrl,
     'addressLines': addressLines,
@@ -658,14 +707,13 @@ class AdmissionsContent {
   };
 
   /// Creates an AdmissionsContent from JSON data.
-  /// 
+  ///
   /// Filters out any empty strings from the addressLines list.
   factory AdmissionsContent.fromJson(Map<String, dynamic> json) =>
       AdmissionsContent(
-        sectionI: json['sectionI'] as String?,
-        sectionII: json['sectionII'] as String?,
-        sectionIII: json['sectionIII'] as String?,
-        sectionIV: json['sectionIV'] as String?,
+        paragraphs: (json['paragraphs'] as List<dynamic>? ?? [])
+            .map((e) => AdmissionsParagraph.fromJson(e as Map<String, dynamic>))
+            .toList(),
         kgFormUrl: json['kgFormUrl'] as String?,
         alternateRouteFormUrl: json['alternateRouteFormUrl'] as String?,
         // Convert address lines, filtering out empty strings
@@ -677,6 +725,62 @@ class AdmissionsContent {
         fetchedAt:
             DateTime.tryParse(json['fetchedAt'] as String? ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0),
+      );
+}
+
+/// A single paragraph of admissions body text (e.g. section I, II, or III).
+class AdmissionsParagraph {
+  /// Ordered inline spans that make up this paragraph.
+  final List<AdmissionsTextSpan> spans;
+
+  /// Creates an admissions paragraph from [spans].
+  const AdmissionsParagraph({required this.spans});
+
+  /// Converts this paragraph to JSON.
+  Map<String, dynamic> toJson() => {
+    'spans': spans.map((s) => s.toJson()).toList(),
+  };
+
+  /// Creates an admissions paragraph from JSON.
+  factory AdmissionsParagraph.fromJson(Map<String, dynamic> json) =>
+      AdmissionsParagraph(
+        spans: (json['spans'] as List<dynamic>? ?? [])
+            .map((e) => AdmissionsTextSpan.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+}
+
+/// An inline text run with optional bold and underline styling.
+class AdmissionsTextSpan {
+  /// Visible text content.
+  final String text;
+
+  /// Whether this run is bold (mirrors website `<strong>`).
+  final bool isBold;
+
+  /// Whether this run is underlined (mirrors website `<u>`).
+  final bool isUnderlined;
+
+  /// Creates a styled admissions text span.
+  const AdmissionsTextSpan({
+    required this.text,
+    this.isBold = false,
+    this.isUnderlined = false,
+  });
+
+  /// Converts this span to JSON.
+  Map<String, dynamic> toJson() => {
+    'text': text,
+    'isBold': isBold,
+    'isUnderlined': isUnderlined,
+  };
+
+  /// Creates a span from JSON.
+  factory AdmissionsTextSpan.fromJson(Map<String, dynamic> json) =>
+      AdmissionsTextSpan(
+        text: json['text'] as String? ?? '',
+        isBold: json['isBold'] as bool? ?? false,
+        isUnderlined: json['isUnderlined'] as bool? ?? false,
       );
 }
 
@@ -772,6 +876,78 @@ class ContactContent {
         heroImageUrl: json['heroImageUrl'] as String?,
         generalNotice: json['generalNotice'] as String?,
         // Parse the timestamp, or use epoch zero if invalid
+        fetchedAt:
+            DateTime.tryParse(json['fetchedAt'] as String? ?? '') ??
+            DateTime.fromMillisecondsSinceEpoch(0),
+      );
+}
+
+/// A single archive entry from the Vidyapith Archives page.
+///
+/// Each item is a titled link (e.g. "2024 Calendar") that opens in the browser.
+class ArchiveItem {
+  /// Display title for the archive entry (asterisks from the site stripped).
+  final String title;
+
+  /// Absolute URL to open when the user taps this item.
+  final String url;
+
+  /// Creates a new [ArchiveItem].
+  const ArchiveItem({
+    required this.title,
+    required this.url,
+  });
+
+  /// Converts this object to JSON for cache storage.
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'url': url,
+      };
+
+  /// Creates an [ArchiveItem] from JSON cache data.
+  factory ArchiveItem.fromJson(Map<String, dynamic> json) => ArchiveItem(
+        title: json['title'] as String? ?? '',
+        url: json['url'] as String? ?? '',
+      );
+}
+
+/// Scraped content from the Vidyapith Archives page (`archives.html`).
+///
+/// Includes a short intro paragraph and a list of archive title links.
+class ArchivesContent {
+  /// Introductory paragraph shown above the archive cards.
+  final String intro;
+
+  /// Archive entries to display as tappable title cards.
+  final List<ArchiveItem> items;
+
+  /// Timestamp when this content was fetched from the website.
+  final DateTime fetchedAt;
+
+  /// Creates a new [ArchivesContent].
+  const ArchivesContent({
+    required this.intro,
+    required this.items,
+    required this.fetchedAt,
+  });
+
+  /// Converts this object to JSON for cache storage.
+  Map<String, dynamic> toJson() => {
+        'intro': intro,
+        'items': items.map((e) => e.toJson()).toList(),
+        'fetchedAt': fetchedAt.toIso8601String(),
+      };
+
+  /// Creates an [ArchivesContent] from JSON cache data.
+  factory ArchivesContent.fromJson(Map<String, dynamic> json) =>
+      ArchivesContent(
+        intro: json['intro'] as String? ?? '',
+        items: (json['items'] as List<dynamic>? ?? [])
+            .map(
+              (e) => ArchiveItem.fromJson(Map<String, dynamic>.from(e as Map)),
+            )
+            .where((e) => e.title.isNotEmpty && e.url.isNotEmpty)
+            .toList(),
         fetchedAt:
             DateTime.tryParse(json['fetchedAt'] as String? ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0),

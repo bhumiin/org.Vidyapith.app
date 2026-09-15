@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/shadcn_theme.dart';
+import '../../core/vidyapith_urls.dart';
 import '../../models/calendar_event.dart';
 
 /// A customizable calendar widget that displays events and supports month navigation.
@@ -153,11 +154,7 @@ class CalendarWidget extends StatelessWidget {
   /// Opens the Vidyapith Google Calendar in an external browser
   /// Shows an error message if the calendar cannot be opened
   Future<void> _syncWithGoogleCalendar(BuildContext context) async {
-    // Google Calendar public URL for Vidyapith events
-    const googleCalendarUrl =
-        'https://calendar.google.com/calendar/u/1?cid=Y185NjlmODM4YzQ3YTFhNDA1YmIxOWU0Yzg1MTIyOWQyZDMyOGUwMzQxYzgzMjExNGIwMDUwNjM2MjE0OTM4MDRlQGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20';
-
-    final uri = Uri.parse(googleCalendarUrl);
+    final uri = Uri.parse(vidyapithGoogleCalendarSyncUrl);
     try {
       final launched = await launchUrl(
         uri,
