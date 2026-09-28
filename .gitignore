@@ -60,3 +60,5 @@ org.Vidyapith.app/
 vidyapith_*.jpg
 vidyapith_*.png
 letterhead.png
+# iOS build output
+ios/build/
