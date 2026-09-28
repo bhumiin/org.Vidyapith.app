@@ -15,15 +15,15 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.vidyapith.vidyapith_hybrid_app"
-    compileSdk = 36 // or flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = "29.0.14206865" // or flutter.ndkVersion
 
     defaultConfig {
         applicationId = "com.vidyapith.vidyapith_hybrid_app"
         minSdk = flutter.minSdkVersion // or flutter.minSdkVersion
-        targetSdk = 36 // or flutter.targetSdkVersion
-        versionCode = 7 // or flutter.versionCode
-        versionName = "1.0.4" // or flutter.versionName
+        targetSdk = 37
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
     }
 
     signingConfigs {
