@@ -78,6 +78,7 @@ flutter:
     - assets/images/logo.png
     - assets/images/letterhead.png
     - assets/images/vvp_50th.png
+    - assets/data/sunday-school-schedule-2026-2027.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

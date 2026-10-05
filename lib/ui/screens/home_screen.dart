@@ -12,6 +12,7 @@ import '../../models/website_content.dart';
 import '../../services/website_scraper.dart';
 import 'archive_screen.dart';
 import 'bookstore_screen.dart';
+import 'class_schedule_screen.dart';
 import 'classes_screen.dart';
 import 'class_detail_screen.dart';
 import 'donate_screen.dart';
@@ -590,6 +591,11 @@ class _HomeScreenState extends State<HomeScreen> {
         'url': 'internal://class/Summer Camp', // Opens class detail screen
       },
       {
+        'icon': Icons.calendar_month,
+        'label': 'CLASS SCHEDULE',
+        'url': 'internal://class-schedule', // Opens Class Schedule screen
+      },
+      {
         'icon': Icons.volunteer_activism,
         'label': 'ACT FOOD DRIVE',
         'url': 'https://vidyapith-act.netlify.app/', // Opens external website
@@ -776,6 +782,13 @@ class _HomeScreenState extends State<HomeScreen> {
         ).push(MaterialPageRoute(builder: (_) => const SnackSignupScreen()));
         return;
       }
+      if (url == 'internal://class-schedule') {
+        // Open the Class Schedule screen (cluster -> grade -> schedule)
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const ClassScheduleScreen()));
+        return;
+      }
       if (url == 'internal://archive') {
         // Open the archive screen
         Navigator.of(
@@ -806,12 +819,12 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
       // If opening failed, show error message
-      if (!launched && mounted) {
+      if (!launched && context.mounted) {
         _showLaunchError(context);
       }
     } catch (_) {
       // If something went wrong, show error message
-      if (mounted) {
+      if (context.mounted) {
         _showLaunchError(context);
       }
     }
