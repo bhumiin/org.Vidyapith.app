@@ -102,7 +102,10 @@ void main() {
       // The header prints the size to the left of the section code.
       expect(kg.headerRaw, '17+  KG A  KG Hall');
       expect(kg.classSize, 17);
-      expect(kg.classSizeNote, isNotNull);
+      // The transcription note that used to read "printed as \"17+\"" is
+      // dropped from this grade: it carried no size information, and the
+      // printed form still lives in header_raw and uncertainties[].
+      expect(kg.classSizeNote, isNull);
     });
 
     test('every period is section-scoped with exactly one cell', () {
@@ -275,6 +278,17 @@ void main() {
       // The halves cell has no subject of its own - it must not crash or
       // print an empty subject line.
       expect(find.text(''), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the KG A header carries no transcription note', (tester) async {
+      await pumpSaturdayGradeScreen(tester, 'KG A');
+
+      // The note that used to read 'printed as "17+"' is gone; only the
+      // size itself is shown.
+      expect(find.text('Class size: 17'), findsOneWidget);
+      expect(find.text('printed as "17+"'), findsNothing);
+      expect(find.textContaining('printed as'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 

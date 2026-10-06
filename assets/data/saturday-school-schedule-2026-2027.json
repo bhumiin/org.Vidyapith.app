@@ -45,7 +45,7 @@
           "grade_label": "KG A",
           "header_raw": "17+  KG A  KG Hall",
           "class_size": 17,
-          "class_size_note": "printed as \"17+\"",
+          "class_size_note": null,
           "room": "KG Hall",
           "room_note": null,
           "sections": [
