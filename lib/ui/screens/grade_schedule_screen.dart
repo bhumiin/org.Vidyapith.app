@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../models/sunday_school_schedule.dart';
-import '../components/badge.dart';
 import '../components/branded_app_bar.dart';
 import '../components/card.dart';
 import '../components/copyright_widget.dart';
@@ -14,7 +13,9 @@ import '../theme/shadcn_theme.dart';
 ///   any header note,
 /// - the four periods in order. Where the subject is printed per section it
 ///   appears in each section's block; where it is printed once for the grade
-///   it appears once, followed by the teacher list(s),
+///   it appears once, followed by the teacher list(s); where the period is
+///   split into semesters (Saturday, Cluster III period 4), one labelled
+///   block per half,
 /// - the symbol legend, because symbols such as `*` and `((--))` appear
 ///   inside the printed teacher lists.
 ///
@@ -45,8 +46,10 @@ class GradeScheduleScreen extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(ShadCNTheme.space4),
+        // Stretch every card to the full column width so all blocks - header,
+        // each period, legend - are uniform instead of hugging their content.
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildHeaderCard(theme, isDark),
             for (final period in group.periods) ...[
@@ -65,15 +68,20 @@ class GradeScheduleScreen extends StatelessWidget {
     );
   }
 
-  /// Header card: grade label, printed header, section codes with rooms,
-  /// class size and the nullable header notes.
+  /// One "section — room" line, with the sheet's abbreviation spelled out.
+  ///
+  /// The grade 3B rooms print as "PHL 1 and PHL 2" on the sheet; PHL is the
+  /// Prayer Hall Lobby, so the expansion is shown alongside the printed text
+  /// instead of replacing it.
+  String _roomLine(ScheduleSection section) {
+    final expansion = section.room.contains('PHL') ? ' (Prayer Hall Lobby)' : '';
+    return '${section.code} — ${section.room}$expansion';
+  }
+
+  /// Header card: section codes with rooms, class size and the nullable
+  /// header notes. The grade is the screen title, so it is not repeated
+  /// here, and the printed header line (grade + size) is left out too.
   Widget _buildHeaderCard(ThemeData theme, bool isDark) {
-    final titleStyle = theme.textTheme.titleLarge?.copyWith(
-      fontWeight: ShadCNTheme.fontBold,
-      color: isDark
-          ? ShadCNTheme.darkCardForeground
-          : ShadCNTheme.cardForeground,
-    );
     final bodyStyle = theme.textTheme.bodyMedium?.copyWith(
       color: isDark
           ? ShadCNTheme.darkCardForeground
@@ -96,14 +104,7 @@ class GradeScheduleScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(group.gradeLabel, style: titleStyle),
-          if (group.headerRaw.isNotEmpty) ...[
-            const SizedBox(height: ShadCNTheme.space1),
-            // The header exactly as printed, kept for reference.
-            Text(group.headerRaw, style: mutedStyle),
-          ],
           if (group.sections.isNotEmpty) ...[
-            const SizedBox(height: ShadCNTheme.space3),
             Text('Rooms', style: labelStyle),
             const SizedBox(height: ShadCNTheme.space1),
             for (final section in group.sections)
@@ -111,11 +112,16 @@ class GradeScheduleScreen extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: ShadCNTheme.space1),
                 // The room is printed as-is: grades 9B and 10B carry a
                 // compound room that changes by period, so it is never split.
-                child: Text('${section.code} — ${section.room}', style: bodyStyle),
+                child: Text(_roomLine(section), style: bodyStyle),
               ),
           ],
-          const SizedBox(height: ShadCNTheme.space1),
-          Text('Class size: ${group.classSize}', style: bodyStyle),
+          if (group.classSize != null) ...[
+            const SizedBox(height: ShadCNTheme.space2),
+            // The size comes from the structured field, never from the
+            // printed header: Saturday prints it oddly ("17+  KG A  KG
+            // Hall") and some grades carry no size at all.
+            Text('Class size: ${group.classSize}', style: bodyStyle),
+          ],
           if (group.classSizeNote != null)
             Padding(
               padding: const EdgeInsets.only(top: ShadCNTheme.space1),
@@ -126,14 +132,6 @@ class GradeScheduleScreen extends StatelessWidget {
               padding: const EdgeInsets.only(top: ShadCNTheme.space1),
               child: Text(group.roomNote!, style: mutedStyle),
             ),
-          if (group.snackBreak) ...[
-            const SizedBox(height: ShadCNTheme.space2),
-            const ShadBadge(
-              text: 'Snack Break',
-              variant: ShadBadgeVariant.outline,
-              size: ShadBadgeSize.sm,
-            ),
-          ],
         ],
       ),
     );
@@ -205,23 +203,54 @@ class GradeScheduleScreen extends StatelessWidget {
     );
   }
 
-  /// One section-scoped cell: its own subject plus its own teacher list.
+  /// One section-scoped cell: its own subject plus its own teacher list -
+  /// or, where the period is split into semesters, one labelled block per
+  /// half (the cell itself carries no subject then).
   Widget _buildSectionEntry(
     ThemeData theme,
     bool isDark,
     ScheduleCell cell, {
     required bool showSectionLabel,
   }) {
+    // One section per grade on Saturday, and that section's code may be
+    // null in the data - never render an empty section heading.
+    final showLabel = showSectionLabel && cell.section.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (showSectionLabel) ...[
+        if (showLabel) ...[
           _sectionLabel(theme, isDark, cell.section),
           const SizedBox(height: ShadCNTheme.space1),
         ],
-        _buildSubject(theme, isDark, cell.subject ?? cell.activityRaw, cell.subjectDetail),
+        if (cell.halves.isNotEmpty)
+          for (var i = 0; i < cell.halves.length; i++) ...[
+            if (i > 0) const SizedBox(height: ShadCNTheme.space3),
+            _buildHalfEntry(theme, isDark, cell.halves[i]),
+          ]
+        else ...[
+          _buildSubject(theme, isDark, cell.subject ?? cell.activityRaw, cell.subjectDetail),
+          const SizedBox(height: ShadCNTheme.space1),
+          _teacherList(theme, isDark, cell.teachersRaw),
+        ],
+      ],
+    );
+  }
+
+  /// One semester half: its label ("Semester 1"), subject and teachers.
+  Widget _buildHalfEntry(
+    ThemeData theme,
+    bool isDark,
+    ScheduleHalf half,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionLabel(theme, isDark, half.label),
         const SizedBox(height: ShadCNTheme.space1),
-        _teacherList(theme, isDark, cell.teachersRaw),
+        _buildSubject(theme, isDark, half.subject ?? half.activityRaw, half.subjectDetail),
+        const SizedBox(height: ShadCNTheme.space1),
+        _teacherList(theme, isDark, half.teachersRaw),
       ],
     );
   }

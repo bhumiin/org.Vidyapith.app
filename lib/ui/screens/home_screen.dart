@@ -12,7 +12,7 @@ import '../../models/website_content.dart';
 import '../../services/website_scraper.dart';
 import 'archive_screen.dart';
 import 'bookstore_screen.dart';
-import 'class_schedule_screen.dart';
+import 'class_schedule_day_hub_screen.dart';
 import 'classes_screen.dart';
 import 'class_detail_screen.dart';
 import 'donate_screen.dart';
@@ -576,6 +576,11 @@ class _HomeScreenState extends State<HomeScreen> {
         'url': 'internal://snack-signup', // Opens Snack Signup screen
       },
       {
+        'icon': Icons.calendar_month,
+        'label': 'CLASS SCHEDULE',
+        'url': 'internal://class-schedule', // Opens the Class Schedule day hub
+      },
+      {
         'icon': Icons.school,
         'label': 'CURRICULAR CLASSES',
         'url': 'internal://class/Curricular Classes', // Opens class detail screen
@@ -589,11 +594,6 @@ class _HomeScreenState extends State<HomeScreen> {
         'icon': Icons.local_fire_department,
         'label': 'SUMMER CAMP CLASSES',
         'url': 'internal://class/Summer Camp', // Opens class detail screen
-      },
-      {
-        'icon': Icons.calendar_month,
-        'label': 'CLASS SCHEDULE',
-        'url': 'internal://class-schedule', // Opens Class Schedule screen
       },
       {
         'icon': Icons.volunteer_activism,
@@ -783,10 +783,11 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
       if (url == 'internal://class-schedule') {
-        // Open the Class Schedule screen (cluster -> grade -> schedule)
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const ClassScheduleScreen()));
+        // Open the Class Schedule day hub: pick Saturday or Sunday, then
+        // drill into that day's clusters and grades.
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ClassScheduleDayHubScreen()),
+        );
         return;
       }
       if (url == 'internal://archive') {

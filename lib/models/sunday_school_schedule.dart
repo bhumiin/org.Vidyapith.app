@@ -1,14 +1,20 @@
-/// Structured Sunday School class schedule for the 2026-2027 year.
+/// Structured class schedule for the 2026-2027 year, for either teaching day.
 ///
-/// The schedule is a fixed dataset that ships with the app as a JSON asset
-/// (`assets/data/sunday-school-schedule-2026-2027.json`). The field contract
-/// is documented in `docs/sunday-school-schedule-schema.md`.
+/// The school runs two timetables off one schema. Each is a fixed dataset
+/// that ships with the app as a JSON asset - Sunday in
+/// `assets/data/sunday-school-schedule-2026-2027.json`, Saturday in
+/// `assets/data/saturday-school-schedule-2026-2027.json`. The shared field
+/// contract is documented in `docs/class-schedule-schema.md`.
+///
+/// The class name predates Saturday: the schema is identical for both days,
+/// so one parser serves both files.
 ///
 /// Parsing is defensive: a missing or unexpected value falls back to a safe
 /// default instead of throwing, so a data problem degrades into an incomplete
 /// screen rather than a crash.
 class SundaySchoolSchedule {
-  /// Version of the JSON schema (currently "1.0").
+  /// Version of the JSON schema ("2.0" in the Saturday file, "1.0" in the
+  /// Sunday file - the two are compatible).
   final String schemaVersion;
 
   /// Maps each printed symbol (`*`, `(-)`, `((--))`) to its meaning.
@@ -142,8 +148,12 @@ class ScheduleGroup {
   /// The grade header exactly as printed, e.g. "(17+1) Grade 5B".
   final String headerRaw;
 
-  /// The number in the first set of parentheses in the header.
-  final int classSize;
+  /// The number in the header, or null when the sheet prints no size.
+  ///
+  /// Always read from this field - Saturday's Cluster I prints the size to
+  /// the left of the section code ("17+  KG A  KG Hall"), so never re-parse
+  /// [headerRaw] for it.
+  final int? classSize;
 
   /// The `+N` part of the header and the header as printed, when present.
   final String? classSizeNote;
@@ -164,7 +174,7 @@ class ScheduleGroup {
     required this.grade,
     required this.gradeLabel,
     required this.headerRaw,
-    required this.classSize,
+    this.classSize,
     this.classSizeNote,
     required this.sections,
     this.roomNote,
@@ -200,7 +210,7 @@ class ScheduleGroup {
       grade: _stringOr(json['grade'], ''),
       gradeLabel: _stringOr(json['grade_label'], ''),
       headerRaw: _stringOr(json['header_raw'], ''),
-      classSize: _intOr(json['class_size'], 0),
+      classSize: _nullableInt(json['class_size']),
       classSizeNote: _nullableString(json['class_size_note']),
       sections: sections,
       roomNote: _nullableString(json['room_note']),
@@ -311,6 +321,13 @@ class ScheduleCell {
   /// Set on cells whose text was read from an adjacent merged cell.
   final String? mergedWith;
 
+  /// Two semester halves in place of a single subject - present only where a
+  /// period is split into semesters (Saturday, Cluster III period 4).
+  ///
+  /// When non-empty the cell carries no [subject] or [teachersRaw] of its
+  /// own: those live on the halves, each with its own label.
+  final List<ScheduleHalf> halves;
+
   /// Free-text notes about this specific cell.
   final List<String> flags;
 
@@ -322,18 +339,17 @@ class ScheduleCell {
     required this.teachersRaw,
     this.teachers = const [],
     this.mergedWith,
+    this.halves = const [],
     this.flags = const [],
   });
 
   factory ScheduleCell.fromJson(Map<String, dynamic> json) {
-    final teachers = <ScheduleTeacher>[];
-    final rawTeachers = json['teachers'];
-    if (rawTeachers is List) {
-      for (final entry in rawTeachers) {
+    final halves = <ScheduleHalf>[];
+    final rawHalves = json['halves'];
+    if (rawHalves is List) {
+      for (final entry in rawHalves) {
         if (entry is Map) {
-          teachers.add(
-            ScheduleTeacher.fromJson(Map<String, dynamic>.from(entry)),
-          );
+          halves.add(ScheduleHalf.fromJson(Map<String, dynamic>.from(entry)));
         }
       }
     }
@@ -344,11 +360,56 @@ class ScheduleCell {
       subjectDetail: _nullableString(json['subject_detail']),
       activityRaw: _nullableString(json['activity_raw']),
       teachersRaw: _stringOr(json['teachers_raw'], ''),
-      teachers: teachers,
+      teachers: _teachersFrom(json['teachers']),
       mergedWith: _nullableString(json['merged_with']),
+      halves: halves,
       flags: _stringList(json['flags']),
     );
   }
+}
+
+/// One semester half of a period that is split across semesters
+/// (Saturday, Cluster III period 4).
+///
+/// Shaped like a cell: a label ("Semester 1"), its subject and its teacher
+/// list. Like a cell, [teachersRaw] is authoritative and [subject] may be
+/// absent.
+class ScheduleHalf {
+  /// The label exactly as printed: "Semester 1" or "Semester 2".
+  final String label;
+
+  /// The subject for this half.
+  final String? subject;
+
+  /// Description following the subject in the same printed line.
+  final String? subjectDetail;
+
+  /// The subject line exactly as printed (subject + description, unsplit).
+  final String? activityRaw;
+
+  /// **Authoritative.** The teacher list exactly as printed.
+  final String teachersRaw;
+
+  /// Best-effort split of [teachersRaw].
+  final List<ScheduleTeacher> teachers;
+
+  const ScheduleHalf({
+    required this.label,
+    this.subject,
+    this.subjectDetail,
+    this.activityRaw,
+    required this.teachersRaw,
+    this.teachers = const [],
+  });
+
+  factory ScheduleHalf.fromJson(Map<String, dynamic> json) => ScheduleHalf(
+        label: _stringOr(json['label'], ''),
+        subject: _nullableString(json['subject']),
+        subjectDetail: _nullableString(json['subject_detail']),
+        activityRaw: _nullableString(json['activity_raw']),
+        teachersRaw: _stringOr(json['teachers_raw'], ''),
+        teachers: _teachersFrom(json['teachers']),
+      );
 }
 
 /// One entry of the convenience `teachers[]` split.
@@ -399,11 +460,27 @@ String _stringOr(dynamic value, String fallback) =>
 /// Reads a string that may be absent or null.
 String? _nullableString(dynamic value) => value is String ? value : null;
 
+/// Reads an integer that may be absent or null.
+int? _nullableInt(dynamic value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return null;
+}
+
 /// Reads an integer, falling back to [fallback] otherwise.
 int _intOr(dynamic value, int fallback) {
   if (value is int) return value;
   if (value is num) return value.toInt();
   return fallback;
+}
+
+/// Reads the convenience `teachers[]` split, skipping anything malformed.
+List<ScheduleTeacher> _teachersFrom(dynamic value) {
+  if (value is! List) return const [];
+  return value
+      .whereType<Map>()
+      .map((entry) => ScheduleTeacher.fromJson(Map<String, dynamic>.from(entry)))
+      .toList();
 }
 
 /// Reads a boolean that may be absent; anything but true becomes false.

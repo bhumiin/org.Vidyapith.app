@@ -1,0 +1,2883 @@
+{
+  "schema_version": "2.0",
+  "day": "Saturday",
+  "document": {
+    "title": "Vivekananda Vidyapith — Saturday class schedule",
+    "organisation": "Vivekananda Vidyapith",
+    "program": "Sunday School (Saturday session)",
+    "academic_year": "2026-2027",
+    "revision": "FINAL",
+    "day": "Saturday",
+    "periods_per_session": 4,
+    "clusters_per_sheet": 2,
+    "sheets": 2,
+    "structure": "Four clusters (I-IV) of three grades each, except Cluster IV which has four (9, 10, 11, 12). Saturday runs one section per grade, labelled A (KG A, 1A ... 12A); the Sunday sheet uses section B. Each grade column carries four periods. On this sheet each grade prints its own subject for each period, so subject_scope is 'section' throughout — there is no shared-subject period as on the Sunday sheet. Cluster III alone splits period 4 into two halves, Semester 1 and Semester 2."
+  },
+  "legend": {
+    "*": "Teacher teaches in more than one Cluster",
+    "(-)": "teacher will attend class",
+    "((--))": "teacher will attend occasionally"
+  },
+  "clusters": [
+    {
+      "id": "I",
+      "sheet": 1,
+      "page_number": 1,
+      "page_in_sheet": "top",
+      "title_raw": "SAT Cluster I",
+      "grades": [
+        "KG",
+        "1",
+        "2"
+      ],
+      "celebrations_raw": "Celebration for Cluster I: Janmashtami, Holy Mother, Chaitanya, Ramanavami, Buddha and other.",
+      "prayer_assembly": {
+        "all": "Prayers and Assembly",
+        "snack_break": {
+          "KG": "KG Hall",
+          "1": "Cultural Hall",
+          "2": "Cultural hall"
+        }
+      },
+      "groups": [
+        {
+          "grade": "KG",
+          "grade_label": "KG A",
+          "header_raw": "17+  KG A  KG Hall",
+          "class_size": 17,
+          "class_size_note": "printed as \"17+\"",
+          "room": "KG Hall",
+          "room_note": null,
+          "sections": [
+            {
+              "code": "KG A",
+              "room": "KG Hall"
+            }
+          ],
+          "periods": [
+            {
+              "period": 1,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "PRANAAM MANTRAS",
+                  "subject_detail": "meanings & related stories",
+                  "activity_raw": "PRANAAM MANTRAS meanings & related stories",
+                  "teachers_raw": "Hema Aunty*, Jyoti Aunty, Kirti V. Aunty, Priya Didi",
+                  "teachers": [
+                    {
+                      "name": "Hema Aunty",
+                      "raw": "Hema Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Jyoti Aunty",
+                      "raw": "Jyoti Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Kirti V. Aunty",
+                      "raw": "Kirti V. Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Priya Didi",
+                      "raw": "Priya Didi",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 2,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "MUSIC",
+                  "subject_detail": "action songs",
+                  "activity_raw": "MUSIC action songs",
+                  "teachers_raw": "Ammu Didi, Kirti V. Aunty, Priya Didi, Jalpa Aunty,",
+                  "teachers": [
+                    {
+                      "name": "Ammu Didi",
+                      "raw": "Ammu Didi",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Kirti V. Aunty",
+                      "raw": "Kirti V. Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Priya Didi",
+                      "raw": "Priya Didi",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Jalpa Aunty",
+                      "raw": "Jalpa Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 3,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "VALUES",
+                  "subject_detail": "related stories",
+                  "activity_raw": "VALUES related stories",
+                  "teachers_raw": "Jyoti Aunty, Kirti V. Aunty, Priya Didi, Jalpa Aunty",
+                  "teachers": [
+                    {
+                      "name": "Jyoti Aunty",
+                      "raw": "Jyoti Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Kirti V. Aunty",
+                      "raw": "Kirti V. Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Priya Didi",
+                      "raw": "Priya Didi",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Jalpa Aunty",
+                      "raw": "Jalpa Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 4,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "SANSKRIT & ARTS & CRAFTS",
+                  "subject_detail": "alphabet singing, games and sound games",
+                  "activity_raw": "SANSKRIT & ARTS & CRAFTS alphabet singing, games and sound games",
+                  "teachers_raw": "Divya Aunty, Kirti V. Aunty, Jalpa Aunty, Priya Didi",
+                  "teachers": [
+                    {
+                      "name": "Divya Aunty",
+                      "raw": "Divya Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Kirti V. Aunty",
+                      "raw": "Kirti V. Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Jalpa Aunty",
+                      "raw": "Jalpa Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Priya Didi",
+                      "raw": "Priya Didi",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            }
+          ],
+          "snack_break": true
+        },
+        {
+          "grade": "1",
+          "grade_label": "1A",
+          "header_raw": "(17)  1A  Cultural Hall",
+          "class_size": 17,
+          "class_size_note": null,
+          "room": "Cultural Hall",
+          "room_note": null,
+          "sections": [
+            {
+              "code": "1A",
+              "room": "Cultural Hall"
+            }
+          ],
+          "periods": [
+            {
+              "period": 1,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "SANSKRIT I",
+                  "subject_detail": null,
+                  "activity_raw": "SANSKRIT I",
+                  "teachers_raw": "Divya Aunty, Swati P. Aunty, Sudha Aunty, Rajeshwari Aunty, (Kinjal Aunty)",
+                  "teachers": [
+                    {
+                      "name": "Divya Aunty",
+                      "raw": "Divya Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Swati P. Aunty",
+                      "raw": "Swati P. Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Sudha Aunty",
+                      "raw": "Sudha Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Rajeshwari Aunty",
+                      "raw": "Rajeshwari Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Kinjal Aunty",
+                      "raw": "(Kinjal Aunty)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 2,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "VALUES",
+                  "subject_detail": null,
+                  "activity_raw": "VALUES",
+                  "teachers_raw": "Jyoti Aunty, Swati P. Aunty, Sudha Aunty, Rajeshwari Aunty",
+                  "teachers": [
+                    {
+                      "name": "Jyoti Aunty",
+                      "raw": "Jyoti Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Swati P. Aunty",
+                      "raw": "Swati P. Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Sudha Aunty",
+                      "raw": "Sudha Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Rajeshwari Aunty",
+                      "raw": "Rajeshwari Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 3,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "PRANAAM MANTRAS",
+                  "subject_detail": null,
+                  "activity_raw": "PRANAAM MANTRAS",
+                  "teachers_raw": "Swati P. Aunty, Divya Aunty, Sudha Aunty, Rajeshwari Aunty",
+                  "teachers": [
+                    {
+                      "name": "Swati P. Aunty",
+                      "raw": "Swati P. Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Divya Aunty",
+                      "raw": "Divya Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Sudha Aunty",
+                      "raw": "Sudha Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Rajeshwari Aunty",
+                      "raw": "Rajeshwari Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 4,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "MUSIC",
+                  "subject_detail": null,
+                  "activity_raw": "MUSIC",
+                  "teachers_raw": "Ammu Didi, Swati P. Aunty, Rajeshwari Aunty, (Linsy Aunty)*",
+                  "teachers": [
+                    {
+                      "name": "Ammu Didi",
+                      "raw": "Ammu Didi",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Swati P. Aunty",
+                      "raw": "Swati P. Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Rajeshwari Aunty",
+                      "raw": "Rajeshwari Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Linsy Aunty",
+                      "raw": "(Linsy Aunty)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": null,
+                      "raw": "*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": "printed with symbols only"
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            }
+          ],
+          "snack_break": true
+        },
+        {
+          "grade": "2",
+          "grade_label": "2A",
+          "header_raw": "(24)  2A  Room 104",
+          "class_size": 24,
+          "class_size_note": null,
+          "room": "Room 104",
+          "room_note": null,
+          "sections": [
+            {
+              "code": "2A",
+              "room": "Room 104"
+            }
+          ],
+          "periods": [
+            {
+              "period": 1,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "PRANAAM MANTRAS",
+                  "subject_detail": "meanings & related stories",
+                  "activity_raw": "PRANAAM MANTRAS meanings & related stories",
+                  "teachers_raw": "Ammu Didi, Dolly Aunty, Daya Aunty, (Neel Bhaiyya)",
+                  "teachers": [
+                    {
+                      "name": "Ammu Didi",
+                      "raw": "Ammu Didi",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Dolly Aunty",
+                      "raw": "Dolly Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Daya Aunty",
+                      "raw": "Daya Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Neel Bhaiyya",
+                      "raw": "(Neel Bhaiyya)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 2,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "SANSKRIT II",
+                  "subject_detail": "alphabet pronunciation, identification and writing from the order given in writing chart",
+                  "activity_raw": "SANSKRIT II alphabet pronunciation, identification and writing from the order given in writing chart",
+                  "teachers_raw": "Divya Aunty, Dolly Aunty, Daya Aunty, Jinal aunty",
+                  "teachers": [
+                    {
+                      "name": "Divya Aunty",
+                      "raw": "Divya Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Dolly Aunty",
+                      "raw": "Dolly Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Daya Aunty",
+                      "raw": "Daya Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Jinal aunty",
+                      "raw": "Jinal aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 3,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "MUSIC",
+                  "subject_detail": "harmonium, manjeera",
+                  "activity_raw": "MUSIC harmonium, manjeera",
+                  "teachers_raw": "Ammu Didi, Dolly Aunty, Daya Aunty, Jinal aunty",
+                  "teachers": [
+                    {
+                      "name": "Ammu Didi",
+                      "raw": "Ammu Didi",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Dolly Aunty",
+                      "raw": "Dolly Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Daya Aunty",
+                      "raw": "Daya Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Jinal aunty",
+                      "raw": "Jinal aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 4,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "VALUES",
+                  "subject_detail": "related stories, arts and crafts",
+                  "activity_raw": "VALUES related stories, arts and crafts",
+                  "teachers_raw": "Dolly Aunty, Daya Aunty, Jinal aunty",
+                  "teachers": [
+                    {
+                      "name": "Dolly Aunty",
+                      "raw": "Dolly Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Daya Aunty",
+                      "raw": "Daya Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Jinal aunty",
+                      "raw": "Jinal aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            }
+          ],
+          "snack_break": true
+        }
+      ],
+      "celebrations": [
+        "Janmashtami",
+        "Holy Mother",
+        "Chaitanya",
+        "Ramanavami",
+        "Buddha and other"
+      ]
+    },
+    {
+      "id": "II",
+      "sheet": 2,
+      "page_number": 2,
+      "page_in_sheet": "top",
+      "title_raw": "SAT Cluster II",
+      "grades": [
+        "3",
+        "4",
+        "5"
+      ],
+      "celebrations_raw": "Celebrations Cluster II: Janmashtami, Holy Mother's Birthday, Shivaratri, Chaitanya, Ramanavami, Buddha and other.",
+      "prayer_assembly": {
+        "all": "Prayers and Assembly",
+        "snack_break": {
+          "3": "Snack Break",
+          "4": null,
+          "5": "Snack Break"
+        }
+      },
+      "groups": [
+        {
+          "grade": "3",
+          "grade_label": "3A",
+          "header_raw": "(19)  3A  Room 106",
+          "class_size": 19,
+          "class_size_note": null,
+          "room": "Room 106",
+          "room_note": null,
+          "sections": [
+            {
+              "code": "3A",
+              "room": "Room 106"
+            }
+          ],
+          "periods": [
+            {
+              "period": 1,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Sanskrit III",
+                  "subject_detail": null,
+                  "activity_raw": "Sanskrit III",
+                  "teachers_raw": "Lekha Aunty*, Bindu Aunty, Medha D. Aunty",
+                  "teachers": [
+                    {
+                      "name": "Lekha Aunty",
+                      "raw": "Lekha Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Bindu Aunty",
+                      "raw": "Bindu Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Medha D. Aunty",
+                      "raw": "Medha D. Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 2,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Shloka/Prayers III",
+                  "subject_detail": null,
+                  "activity_raw": "Shloka/Prayers III",
+                  "teachers_raw": "Darshan Uncle*, Kanan Aunty*, Manish Uncle*, (Priti Aunty)*",
+                  "teachers": [
+                    {
+                      "name": "Darshan Uncle",
+                      "raw": "Darshan Uncle*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Kanan Aunty",
+                      "raw": "Kanan Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Manish Uncle",
+                      "raw": "Manish Uncle*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Priti Aunty",
+                      "raw": "(Priti Aunty)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": null,
+                      "raw": "*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": "printed with symbols only"
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 3,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Biographies III",
+                  "subject_detail": null,
+                  "activity_raw": "Biographies III",
+                  "teachers_raw": "Hemal Aunty*, Shilpa P. Aunty, Rameshwari Aunty*, Raveena Aunty*",
+                  "teachers": [
+                    {
+                      "name": "Hemal Aunty",
+                      "raw": "Hemal Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Shilpa P. Aunty",
+                      "raw": "Shilpa P. Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Rameshwari Aunty",
+                      "raw": "Rameshwari Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Raveena Aunty",
+                      "raw": "Raveena Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 4,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Music III",
+                  "subject_detail": null,
+                  "activity_raw": "Music III",
+                  "teachers_raw": "Anindita Aunty, Megha M. Aunty, Swapna Aunty, Hema Aunty*",
+                  "teachers": [
+                    {
+                      "name": "Anindita Aunty",
+                      "raw": "Anindita Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Megha M. Aunty",
+                      "raw": "Megha M. Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Swapna Aunty",
+                      "raw": "Swapna Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Hema Aunty",
+                      "raw": "Hema Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            }
+          ],
+          "snack_break": true
+        },
+        {
+          "grade": "4",
+          "grade_label": "4A",
+          "header_raw": "(13)  4A  Room PHL",
+          "class_size": 13,
+          "class_size_note": null,
+          "room": "PHL",
+          "room_note": null,
+          "sections": [
+            {
+              "code": "4A",
+              "room": "PHL"
+            }
+          ],
+          "periods": [
+            {
+              "period": 1,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Biographies IV",
+                  "subject_detail": null,
+                  "activity_raw": "Biographies IV",
+                  "teachers_raw": "Hemal Aunty, Shilpa P. Aunty, Harpul Uncle",
+                  "teachers": [
+                    {
+                      "name": "Hemal Aunty",
+                      "raw": "Hemal Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Shilpa P. Aunty",
+                      "raw": "Shilpa P. Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Harpul Uncle",
+                      "raw": "Harpul Uncle",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 2,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Music IV",
+                  "subject_detail": null,
+                  "activity_raw": "Music IV",
+                  "teachers_raw": "Anindita Aunty, Megha M. Aunty, Hema Aunty*, (Linsy Aunty)*",
+                  "teachers": [
+                    {
+                      "name": "Anindita Aunty",
+                      "raw": "Anindita Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Megha M. Aunty",
+                      "raw": "Megha M. Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Hema Aunty",
+                      "raw": "Hema Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Linsy Aunty",
+                      "raw": "(Linsy Aunty)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": null,
+                      "raw": "*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": "printed with symbols only"
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 3,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Sanskrit IV",
+                  "subject_detail": null,
+                  "activity_raw": "Sanskrit IV",
+                  "teachers_raw": "Medha D. Aunty, , Bindu Aunty, Harpul Uncle, (Kinjal Aunty)",
+                  "teachers": [
+                    {
+                      "name": "Medha D. Aunty",
+                      "raw": "Medha D. Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Bindu Aunty",
+                      "raw": "Bindu Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Harpul Uncle",
+                      "raw": "Harpul Uncle",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Kinjal Aunty",
+                      "raw": "(Kinjal Aunty)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 4,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Shloka/Prayers IV",
+                  "subject_detail": null,
+                  "activity_raw": "Shloka/Prayers IV",
+                  "teachers_raw": "Darshan Uncle*, Manish Uncle*, Kanan Aunty*, (Priti Aunty)*",
+                  "teachers": [
+                    {
+                      "name": "Darshan Uncle",
+                      "raw": "Darshan Uncle*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Manish Uncle",
+                      "raw": "Manish Uncle*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Kanan Aunty",
+                      "raw": "Kanan Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Priti Aunty",
+                      "raw": "(Priti Aunty)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": null,
+                      "raw": "*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": "printed with symbols only"
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            }
+          ],
+          "snack_break": false
+        },
+        {
+          "grade": "5",
+          "grade_label": "5A",
+          "header_raw": "(19+1)  5A  Room 204  (Breakout room 203 for Periods 2 & 3)",
+          "class_size": 19,
+          "class_size_note": "+1 (printed \"(19+1)  5A  Room 204  (Breakout room 203 for Periods 2 & 3)\")",
+          "room": "Room 204",
+          "room_note": "Breakout room 203 for Periods 2 & 3",
+          "sections": [
+            {
+              "code": "5A",
+              "room": "Room 204"
+            }
+          ],
+          "periods": [
+            {
+              "period": 1,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Music V",
+                  "subject_detail": null,
+                  "activity_raw": "Music V",
+                  "teachers_raw": "Anindita Aunty, Megha M. Aunty, Swapna Aunty",
+                  "teachers": [
+                    {
+                      "name": "Anindita Aunty",
+                      "raw": "Anindita Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Megha M. Aunty",
+                      "raw": "Megha M. Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Swapna Aunty",
+                      "raw": "Swapna Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 2,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Sanskrit V",
+                  "subject_detail": null,
+                  "activity_raw": "Sanskrit V",
+                  "teachers_raw": "Medha D. Aunty, Lekha Aunty*, Bindu Aunty, (Kinjal Aunty)*",
+                  "teachers": [
+                    {
+                      "name": "Medha D. Aunty",
+                      "raw": "Medha D. Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Lekha Aunty",
+                      "raw": "Lekha Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Bindu Aunty",
+                      "raw": "Bindu Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Kinjal Aunty",
+                      "raw": "(Kinjal Aunty)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": null,
+                      "raw": "*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": "printed with symbols only"
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 3,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Shloka/Prayers V",
+                  "subject_detail": null,
+                  "activity_raw": "Shloka/Prayers V",
+                  "teachers_raw": "Darshan Uncle*, Kanan Aunty*, Manish Uncle*",
+                  "teachers": [
+                    {
+                      "name": "Darshan Uncle",
+                      "raw": "Darshan Uncle*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Kanan Aunty",
+                      "raw": "Kanan Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Manish Uncle",
+                      "raw": "Manish Uncle*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 4,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Biographies V",
+                  "subject_detail": null,
+                  "activity_raw": "Biographies V",
+                  "teachers_raw": "Hemal Aunty, Shilpa P. Aunty, Harpul Uncle, Raveena Aunty*",
+                  "teachers": [
+                    {
+                      "name": "Hemal Aunty",
+                      "raw": "Hemal Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Shilpa P. Aunty",
+                      "raw": "Shilpa P. Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Harpul Uncle",
+                      "raw": "Harpul Uncle",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Raveena Aunty",
+                      "raw": "Raveena Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            }
+          ],
+          "snack_break": true
+        }
+      ],
+      "celebrations": [
+        "Janmashtami",
+        "Holy Mother's Birthday",
+        "Shivaratri",
+        "Chaitanya",
+        "Ramanavami",
+        "Buddha and other"
+      ]
+    },
+    {
+      "id": "III",
+      "sheet": 1,
+      "page_number": 3,
+      "page_in_sheet": "bottom",
+      "title_raw": "SAT Cluster III",
+      "grades": [
+        "6",
+        "7",
+        "8"
+      ],
+      "celebrations_raw": "Celebrations Cluster III: Durga, T.G. Seminar, Gita, Holy Mother, Puja 01/01/'27, Shiva, RK, Chaitanya, Rama, Buddha, & others.",
+      "prayer_assembly": {
+        "all": "Prayers and Assembly",
+        "snack_break": {
+          "all": "Snack Break"
+        }
+      },
+      "periods_split_semesters": [
+        4
+      ],
+      "groups": [
+        {
+          "grade": "6",
+          "grade_label": "6A",
+          "header_raw": "(16)  6A  Room 107",
+          "class_size": 16,
+          "class_size_note": null,
+          "room": "Room 107",
+          "room_note": null,
+          "sections": [
+            {
+              "code": "6A",
+              "room": "Room 107"
+            }
+          ],
+          "periods": [
+            {
+              "period": 1,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Swami Vivekananda, Wandering Monk",
+                  "subject_detail": null,
+                  "activity_raw": "Swami Vivekananda, Wandering Monk",
+                  "teachers_raw": "Neirah Aunty* & Raveena Aunty*",
+                  "teachers": [
+                    {
+                      "name": "Neirah Aunty & Raveena Aunty",
+                      "raw": "Neirah Aunty* & Raveena Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": true,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 2,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Shloka - VI, Gita Ch 12",
+                  "subject_detail": "(Memorize, meaning & writing key words)",
+                  "activity_raw": "Shloka - VI, Gita Ch 12 (Memorize, meaning & writing key words)",
+                  "teachers_raw": "Fenil Uncle, Haresh Uncle, (Ranjan Uncle)",
+                  "teachers": [
+                    {
+                      "name": "Fenil Uncle",
+                      "raw": "Fenil Uncle",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Haresh Uncle",
+                      "raw": "Haresh Uncle",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Ranjan Uncle",
+                      "raw": "(Ranjan Uncle)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 3,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Sanskrit VI",
+                  "subject_detail": "(Review Sanskrit V, Reading/writing stories)",
+                  "activity_raw": "Sanskrit VI (Review Sanskrit V, Reading/writing stories)",
+                  "teachers_raw": "Swati C. Aunty, Lekha Aunty*, (Priti Aunty)*",
+                  "teachers": [
+                    {
+                      "name": "Swati C. Aunty",
+                      "raw": "Swati C. Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Lekha Aunty",
+                      "raw": "Lekha Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Priti Aunty",
+                      "raw": "(Priti Aunty)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": null,
+                      "raw": "*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": "printed with symbols only"
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 4,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": null,
+                  "subject_detail": null,
+                  "activity_raw": null,
+                  "teachers_raw": null,
+                  "teachers": [],
+                  "flags": [],
+                  "halves": [
+                    {
+                      "label": "Semester 1",
+                      "subject": "Music",
+                      "subject_detail": null,
+                      "activity_raw": "Music",
+                      "teachers_raw": "Nina Didi, Haresh Uncle, (Medha H. Aunty*)",
+                      "teachers": [
+                        {
+                          "name": "Nina Didi",
+                          "raw": "Nina Didi",
+                          "multi_cluster": false,
+                          "attendance": null,
+                          "compound": false,
+                          "note": null
+                        },
+                        {
+                          "name": "Haresh Uncle",
+                          "raw": "Haresh Uncle",
+                          "multi_cluster": false,
+                          "attendance": null,
+                          "compound": false,
+                          "note": null
+                        },
+                        {
+                          "name": "Medha H. Aunty",
+                          "raw": "(Medha H. Aunty*)",
+                          "multi_cluster": true,
+                          "attendance": "attend",
+                          "compound": false,
+                          "note": null
+                        }
+                      ]
+                    },
+                    {
+                      "label": "Semester 2",
+                      "subject": "Mythology",
+                      "subject_detail": "(Ramayana)",
+                      "activity_raw": "Mythology (Ramayana)",
+                      "teachers_raw": "Kirti C. Aunty*, Rameshwari Aunty*",
+                      "teachers": [
+                        {
+                          "name": "Kirti C. Aunty",
+                          "raw": "Kirti C. Aunty*",
+                          "multi_cluster": true,
+                          "attendance": null,
+                          "compound": false,
+                          "note": null
+                        },
+                        {
+                          "name": "Rameshwari Aunty",
+                          "raw": "Rameshwari Aunty*",
+                          "multi_cluster": true,
+                          "attendance": null,
+                          "compound": false,
+                          "note": null
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "snack_break": true
+        },
+        {
+          "grade": "7",
+          "grade_label": "7A",
+          "header_raw": "(21)  7A  Room 201  (Breakout room 203 for Period 1)",
+          "class_size": 21,
+          "class_size_note": null,
+          "room": "Room 201",
+          "room_note": "Breakout room 203 for Period 1",
+          "sections": [
+            {
+              "code": "7A",
+              "room": "Room 201"
+            }
+          ],
+          "periods": [
+            {
+              "period": 1,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Selected Shlokas, Gita Ch.2 to 11",
+                  "subject_detail": "(Review Ch. 12)",
+                  "activity_raw": "Selected Shlokas, Gita Ch.2 to 11 (Review Ch. 12)",
+                  "teachers_raw": "Fenil Uncle, (Manish Uncle)*; (Darshan Uncle*)",
+                  "teachers": [
+                    {
+                      "name": "Fenil Uncle",
+                      "raw": "Fenil Uncle",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Manish Uncle",
+                      "raw": "(Manish Uncle)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": ";",
+                      "raw": "*;",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Darshan Uncle",
+                      "raw": "(Darshan Uncle*)",
+                      "multi_cluster": true,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 2,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Values and Habits-I",
+                  "subject_detail": "(What We Stand For? - Part I)",
+                  "activity_raw": "Values and Habits-I (What We Stand For? - Part I)",
+                  "teachers_raw": "Lalitha Aunty*, Smita Aunty*; Swati C. Aunty",
+                  "teachers": [
+                    {
+                      "name": "Lalitha Aunty",
+                      "raw": "Lalitha Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Smita Aunty; Swati C. Aunty",
+                      "raw": "Smita Aunty*; Swati C. Aunty",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 3,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Biography-VII",
+                  "subject_detail": "Sem. 1/2: Sri Ramakrishna, Sri Sarada Devi (Sadhana and Teachings)",
+                  "activity_raw": "Biography-VII Sem. 1/2: Sri Ramakrishna, Sri Sarada Devi (Sadhana and Teachings)",
+                  "teachers_raw": "Jalini Aunty*, Nina Didi",
+                  "teachers": [
+                    {
+                      "name": "Jalini Aunty",
+                      "raw": "Jalini Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Nina Didi",
+                      "raw": "Nina Didi",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 4,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": null,
+                  "subject_detail": null,
+                  "activity_raw": null,
+                  "teachers_raw": null,
+                  "teachers": [],
+                  "flags": [],
+                  "halves": [
+                    {
+                      "label": "Semester 1",
+                      "subject": "Mythology",
+                      "subject_detail": "(Bhagavatam)",
+                      "activity_raw": "Mythology (Bhagavatam)",
+                      "teachers_raw": "Kirti C. Aunty*, Neirah Aunty*, Rameshwari Aunty*",
+                      "teachers": [
+                        {
+                          "name": "Kirti C. Aunty",
+                          "raw": "Kirti C. Aunty*",
+                          "multi_cluster": true,
+                          "attendance": null,
+                          "compound": false,
+                          "note": null
+                        },
+                        {
+                          "name": "Neirah Aunty",
+                          "raw": "Neirah Aunty*",
+                          "multi_cluster": true,
+                          "attendance": null,
+                          "compound": false,
+                          "note": null
+                        },
+                        {
+                          "name": "Rameshwari Aunty",
+                          "raw": "Rameshwari Aunty*",
+                          "multi_cluster": true,
+                          "attendance": null,
+                          "compound": false,
+                          "note": null
+                        }
+                      ]
+                    },
+                    {
+                      "label": "Semester 2",
+                      "subject": "Music",
+                      "subject_detail": null,
+                      "activity_raw": "Music",
+                      "teachers_raw": "Nina Didi, Haresh Uncle, (Medha H. Aunty*)",
+                      "teachers": [
+                        {
+                          "name": "Nina Didi",
+                          "raw": "Nina Didi",
+                          "multi_cluster": false,
+                          "attendance": null,
+                          "compound": false,
+                          "note": null
+                        },
+                        {
+                          "name": "Haresh Uncle",
+                          "raw": "Haresh Uncle",
+                          "multi_cluster": false,
+                          "attendance": null,
+                          "compound": false,
+                          "note": null
+                        },
+                        {
+                          "name": "Medha H. Aunty",
+                          "raw": "(Medha H. Aunty*)",
+                          "multi_cluster": true,
+                          "attendance": "attend",
+                          "compound": false,
+                          "note": null
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "snack_break": true
+        },
+        {
+          "grade": "8",
+          "grade_label": "8A",
+          "header_raw": "(16)  8A  Room 205",
+          "class_size": 16,
+          "class_size_note": null,
+          "room": "Room 205",
+          "room_note": null,
+          "sections": [
+            {
+              "code": "8A",
+              "room": "Room 205"
+            }
+          ],
+          "periods": [
+            {
+              "period": 1,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Shloka - Gita Ch. 15",
+                  "subject_detail": "(Review Ch. 12 and selected shlokas)",
+                  "activity_raw": "Shloka - Gita Ch. 15 (Review Ch. 12 and selected shlokas)",
+                  "teachers_raw": "Jalini Aunty*, Nina Didi, (Kanan Aunty), ((Kirit Uncle*))",
+                  "teachers": [
+                    {
+                      "name": "Jalini Aunty",
+                      "raw": "Jalini Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Nina Didi",
+                      "raw": "Nina Didi",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Kanan Aunty",
+                      "raw": "(Kanan Aunty)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Kirit Uncle",
+                      "raw": "(Kirit Uncle*)",
+                      "multi_cluster": true,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 2,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Indian Culture & traditions",
+                  "subject_detail": "(Festivals and traditions ~Places of worship significance, What You Will See in a Hindu Temple series)",
+                  "activity_raw": "Indian Culture & traditions (Festivals and traditions ~Places of worship significance, What You Will See in a Hindu Temple series)",
+                  "teachers_raw": "Kirti C. Aunty*, Hina Aunty*",
+                  "teachers": [
+                    {
+                      "name": "Kirti C. Aunty",
+                      "raw": "Kirti C. Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Hina Aunty",
+                      "raw": "Hina Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 3,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Values and Habits-II",
+                  "subject_detail": "(What We Stand For? - Part II)",
+                  "activity_raw": "Values and Habits-II (What We Stand For? - Part II)",
+                  "teachers_raw": "Fenil Uncle, Sonali didi / Rushil bhayya",
+                  "teachers": [
+                    {
+                      "name": "Fenil Uncle",
+                      "raw": "Fenil Uncle",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Sonali didi / Rushil bhayya",
+                      "raw": "Sonali didi / Rushil bhayya",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": true,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 4,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": null,
+                  "subject_detail": null,
+                  "activity_raw": null,
+                  "teachers_raw": null,
+                  "teachers": [],
+                  "flags": [],
+                  "halves": [
+                    {
+                      "label": "Semester 1",
+                      "subject": "Music",
+                      "subject_detail": null,
+                      "activity_raw": "Music",
+                      "teachers_raw": "Vasu Aunty*",
+                      "teachers": [
+                        {
+                          "name": "Vasu Aunty",
+                          "raw": "Vasu Aunty*",
+                          "multi_cluster": true,
+                          "attendance": null,
+                          "compound": false,
+                          "note": null
+                        }
+                      ]
+                    },
+                    {
+                      "label": "Semester 2",
+                      "subject": "Mythology",
+                      "subject_detail": "(Mahabharata)",
+                      "activity_raw": "Mythology (Mahabharata)",
+                      "teachers_raw": "Neirah Aunty*, Lekha Aunty*",
+                      "teachers": [
+                        {
+                          "name": "Neirah Aunty",
+                          "raw": "Neirah Aunty*",
+                          "multi_cluster": true,
+                          "attendance": null,
+                          "compound": false,
+                          "note": null
+                        },
+                        {
+                          "name": "Lekha Aunty",
+                          "raw": "Lekha Aunty*",
+                          "multi_cluster": true,
+                          "attendance": null,
+                          "compound": false,
+                          "note": null
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "snack_break": true
+        }
+      ],
+      "celebrations": [
+        "Durga",
+        "T.G. Seminar",
+        "Gita",
+        "Holy Mother",
+        "Puja 01/01/'27",
+        "Shiva",
+        "RK",
+        "Chaitanya",
+        "Rama",
+        "Buddha",
+        "and other"
+      ]
+    },
+    {
+      "id": "IV",
+      "sheet": 2,
+      "page_number": 4,
+      "page_in_sheet": "bottom",
+      "title_raw": "SAT Cluster IV",
+      "grades": [
+        "9",
+        "10",
+        "11",
+        "12"
+      ],
+      "celebrations_raw": "Celebrations Cluster IV: Durga, T.G. Seminar, Gita, Holy Mother, Puja 01/01/'27, Shiva, RK, Chaitanya, Rama, Buddha, and others.",
+      "prayer_assembly": {
+        "all": "Prayers and Assembly",
+        "snack_break": {
+          "all": "Snack Break"
+        }
+      },
+      "groups": [
+        {
+          "grade": "9",
+          "grade_label": "9A",
+          "header_raw": "(11)  9A  Room 109",
+          "class_size": 11,
+          "class_size_note": null,
+          "room": "Room 109",
+          "room_note": null,
+          "sections": [
+            {
+              "code": "9A",
+              "room": "Room 109"
+            }
+          ],
+          "periods": [
+            {
+              "period": 1,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Basics of Karma Yoga & Bhakti Yoga",
+                  "subject_detail": null,
+                  "activity_raw": "Basics of Karma Yoga & Bhakti Yoga",
+                  "teachers_raw": "Krishnan Uncle, Kiron Aunty, ((Hina Aunty*))",
+                  "teachers": [
+                    {
+                      "name": "Krishnan Uncle",
+                      "raw": "Krishnan Uncle",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Kiron Aunty",
+                      "raw": "Kiron Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Hina Aunty",
+                      "raw": "(Hina Aunty*)",
+                      "multi_cluster": true,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 2,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Gita Ch. 16",
+                  "subject_detail": null,
+                  "activity_raw": "Gita Ch. 16",
+                  "teachers_raw": "Neirah Aunty*, Medha H. Aunty*",
+                  "teachers": [
+                    {
+                      "name": "Neirah Aunty",
+                      "raw": "Neirah Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Medha H. Aunty",
+                      "raw": "Medha H. Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 3,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Travel India",
+                  "subject_detail": null,
+                  "activity_raw": "Travel India",
+                  "teachers_raw": "Mayur Uncle, Hina Aunty*, Rekha Aunty, (Arvind Uncle)",
+                  "teachers": [
+                    {
+                      "name": "Mayur Uncle",
+                      "raw": "Mayur Uncle",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Hina Aunty",
+                      "raw": "Hina Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Rekha Aunty",
+                      "raw": "Rekha Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Arvind Uncle",
+                      "raw": "(Arvind Uncle)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 4,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Disciples of Sri Ramakrishna",
+                  "subject_detail": null,
+                  "activity_raw": "Disciples of Sri Ramakrishna",
+                  "teachers_raw": "Jalini Aunty*, Kiron Aunty, Suddho Uncle",
+                  "teachers": [
+                    {
+                      "name": "Jalini Aunty",
+                      "raw": "Jalini Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Kiron Aunty",
+                      "raw": "Kiron Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Suddho Uncle",
+                      "raw": "Suddho Uncle",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            }
+          ],
+          "snack_break": true
+        },
+        {
+          "grade": "10",
+          "grade_label": "10A",
+          "header_raw": "(11)  10A  Room 108",
+          "class_size": 11,
+          "class_size_note": null,
+          "room": "Room 108",
+          "room_note": null,
+          "sections": [
+            {
+              "code": "10A",
+              "room": "Room 108"
+            }
+          ],
+          "periods": [
+            {
+              "period": 1,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Hinduism",
+                  "subject_detail": null,
+                  "activity_raw": "Hinduism",
+                  "teachers_raw": "Kirti C. Aunty*, Rekha Aunty; Sonali didi / Rushil bhayya",
+                  "teachers": [
+                    {
+                      "name": "Kirti C. Aunty",
+                      "raw": "Kirti C. Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Rekha Aunty; Sonali didi / Rushil bhayya",
+                      "raw": "Rekha Aunty; Sonali didi / Rushil bhayya",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": true,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 2,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Bio. I & II: Vivekananda in the West",
+                  "subject_detail": null,
+                  "activity_raw": "Bio. I & II: Vivekananda in the West",
+                  "teachers_raw": "Krishnan Uncle, Kiran Aunty",
+                  "teachers": [
+                    {
+                      "name": "Krishnan Uncle",
+                      "raw": "Krishnan Uncle",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Kiran Aunty",
+                      "raw": "Kiran Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 3,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Gita Ch. 17",
+                  "subject_detail": null,
+                  "activity_raw": "Gita Ch. 17",
+                  "teachers_raw": "Vasu Aunty*, Kirit Uncle*",
+                  "teachers": [
+                    {
+                      "name": "Vasu Aunty",
+                      "raw": "Vasu Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Kirit Uncle",
+                      "raw": "Kirit Uncle*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 4,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Hymns and Bhajans",
+                  "subject_detail": null,
+                  "activity_raw": "Hymns and Bhajans",
+                  "teachers_raw": "(Uncle), Sonali didi / Rushil bhayya",
+                  "teachers": [
+                    {
+                      "name": "Uncle",
+                      "raw": "(Uncle)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Sonali didi / Rushil bhayya",
+                      "raw": "Sonali didi / Rushil bhayya",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": true,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            }
+          ],
+          "snack_break": true
+        },
+        {
+          "grade": "11",
+          "grade_label": "11A",
+          "header_raw": "(10)  11A  Room 103",
+          "class_size": 10,
+          "class_size_note": null,
+          "room": "Room 103",
+          "room_note": null,
+          "sections": [
+            {
+              "code": "11A",
+              "room": "Room 103"
+            }
+          ],
+          "periods": [
+            {
+              "period": 1,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Selected Shlokas - PART II",
+                  "subject_detail": "Gita Ch. 13-14-18",
+                  "activity_raw": "Selected Shlokas - PART II Gita Ch. 13-14-18",
+                  "teachers_raw": "((Uncle)), Medha H. Aunty*, Sivadasan Uncle, Suddho Uncle",
+                  "teachers": [
+                    {
+                      "name": "Uncle",
+                      "raw": "(Uncle)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Medha H. Aunty",
+                      "raw": "Medha H. Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Sivadasan Uncle",
+                      "raw": "Sivadasan Uncle",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Suddho Uncle",
+                      "raw": "Suddho Uncle",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 2,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "World Religions and Harmony of Religions",
+                  "subject_detail": null,
+                  "activity_raw": "World Religions and Harmony of Religions",
+                  "teachers_raw": "Vasu Aunty*, Kirit Uncle*",
+                  "teachers": [
+                    {
+                      "name": "Vasu Aunty",
+                      "raw": "Vasu Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Kirit Uncle",
+                      "raw": "Kirit Uncle*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 3,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Values & Habits III",
+                  "subject_detail": "Harmony of Yogas , (Swami Adis. Book) + (15 shlokas from Raman Maharshi stotram)",
+                  "activity_raw": "Values & Habits III Harmony of Yogas , (Swami Adis. Book) + (15 shlokas from Raman Maharshi stotram)",
+                  "teachers_raw": "Lalitha Aunty*, Smita Aunty*",
+                  "teachers": [
+                    {
+                      "name": "Lalitha Aunty",
+                      "raw": "Lalitha Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Smita Aunty",
+                      "raw": "Smita Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 4,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Milestones in Indian & World History",
+                  "subject_detail": null,
+                  "activity_raw": "Milestones in Indian & World History",
+                  "teachers_raw": "Mayur Uncle, Rekha Aunty, (Neel Bhaiyya), (( Jayant Uncle))",
+                  "teachers": [
+                    {
+                      "name": "Mayur Uncle",
+                      "raw": "Mayur Uncle",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Rekha Aunty",
+                      "raw": "Rekha Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Neel Bhaiyya",
+                      "raw": "(Neel Bhaiyya)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Jayant Uncle",
+                      "raw": "( Jayant Uncle)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            }
+          ],
+          "snack_break": true
+        },
+        {
+          "grade": "12",
+          "grade_label": "12A",
+          "header_raw": "(7)  12A  Rm. 102",
+          "class_size": 7,
+          "class_size_note": null,
+          "room": "Rm. 102",
+          "room_note": null,
+          "sections": [
+            {
+              "code": "12A",
+              "room": "Rm. 102"
+            }
+          ],
+          "periods": [
+            {
+              "period": 1,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Values and Habits-IV",
+                  "subject_detail": "(What We Stand For)",
+                  "activity_raw": "Values and Habits-IV (What We Stand For)",
+                  "teachers_raw": "Lalitha Aunty*, Smita Aunty*",
+                  "teachers": [
+                    {
+                      "name": "Lalitha Aunty",
+                      "raw": "Lalitha Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Smita Aunty",
+                      "raw": "Smita Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 2,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Letters of Swami Vivekananda",
+                  "subject_detail": null,
+                  "activity_raw": "Letters of Swami Vivekananda",
+                  "teachers_raw": "Rekha Aunty, Mayur Uncle, ((Jayant Uncle)), (Arvind Uncle)",
+                  "teachers": [
+                    {
+                      "name": "Rekha Aunty",
+                      "raw": "Rekha Aunty",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Mayur Uncle",
+                      "raw": "Mayur Uncle",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Jayant Uncle",
+                      "raw": "(Jayant Uncle)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Arvind Uncle",
+                      "raw": "(Arvind Uncle)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 3,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Gospel",
+                  "subject_detail": "it's application for living a spiritual life / Taitariya",
+                  "activity_raw": "Gospel it's application for living a spiritual life / Taitariya",
+                  "teachers_raw": "Medha H. Aunty*, ((Uncle)), Sivadasan Uncle, Suddho Uncle, ((Uma Aunty, 2nd Semester))",
+                  "teachers": [
+                    {
+                      "name": "Medha H. Aunty",
+                      "raw": "Medha H. Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Uncle",
+                      "raw": "(Uncle)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Sivadasan Uncle",
+                      "raw": "Sivadasan Uncle",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Suddho Uncle",
+                      "raw": "Suddho Uncle",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Uma Aunty, 2nd Semester",
+                      "raw": "(Uma Aunty, 2nd Semester)",
+                      "multi_cluster": false,
+                      "attendance": "attend",
+                      "compound": true,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            },
+            {
+              "period": 4,
+              "subject_scope": "section",
+              "merged": false,
+              "cells": [
+                {
+                  "section": null,
+                  "subject": "Science & Spirituality, Bio III & IV: Vivekananda in the West",
+                  "subject_detail": null,
+                  "activity_raw": "Science & Spirituality, Bio III & IV: Vivekananda in the West",
+                  "teachers_raw": "Krishnan Uncle, Hina Aunty*",
+                  "teachers": [
+                    {
+                      "name": "Krishnan Uncle",
+                      "raw": "Krishnan Uncle",
+                      "multi_cluster": false,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    },
+                    {
+                      "name": "Hina Aunty",
+                      "raw": "Hina Aunty*",
+                      "multi_cluster": true,
+                      "attendance": null,
+                      "compound": false,
+                      "note": null
+                    }
+                  ],
+                  "flags": []
+                }
+              ]
+            }
+          ],
+          "snack_break": true
+        }
+      ],
+      "celebrations": [
+        "Durga",
+        "T.G. Seminar",
+        "Gita",
+        "Holy Mother",
+        "Puja 01/01/'27",
+        "Shiva",
+        "RK",
+        "Chaitanya",
+        "Rama",
+        "Buddha",
+        "and other"
+      ]
+    }
+  ],
+  "source": {
+    "email_subject": "Saturday class schedule",
+    "emails": [
+      {
+        "from": "Bhumin Desai <bhumiin@gmail.com>",
+        "date": "Mon, 5 Oct 2026 17:23:52 -0400",
+        "mailer": "iPhone Mail",
+        "attachments": [
+          "IMG_5315.jpeg",
+          "IMG_5316.jpeg"
+        ],
+        "attachment_dimensions": "2142x2856 (downscaled by iPhone Mail on send)"
+      },
+      {
+        "from": "hermes agent <hermes.ai.agent00@gmail.com>",
+        "date": "Mon, 5 Oct 2026 17:44:27 -0400",
+        "note": "same two photographs, full resolution",
+        "attachments": [
+          "IMG_5315.jpeg",
+          "IMG_5316.jpeg"
+        ],
+        "attachment_dimensions": "4284x5712"
+      }
+    ],
+    "extraction": "Read from the full-resolution pair (4284x5712) with vision passes over native-resolution crops: full-width row bands for headers and footers, and per-grade-column crops with the period-label strip attached. Cross-checked between overlapping crops. See the transcription sidecars for verbatim reads.",
+    "photos": [
+      {
+        "file": "Saturday class schedule 2026-2027 - sheet 1 (Clusters I and III).jpeg",
+        "width": 4284,
+        "height": 5712,
+        "sha256": "159fac4413b25c53d503e589d31e189783ed7d9731cc20d10766d9367f32f4d5"
+      },
+      {
+        "file": "Saturday class schedule 2026-2027 - sheet 2 (Clusters II and IV).jpeg",
+        "width": 4284,
+        "height": 5712,
+        "sha256": "e9efdf53a6cf2bb816f1a5f5131108ff8a22300e445579f788fe325c17682af2"
+      }
+    ],
+    "sheet_contents": {
+      "1": "Cluster I (page 1, top) and Cluster III (page 3, bottom)",
+      "2": "Cluster II (page 2, top) and Cluster IV (page 4, bottom)"
+    }
+  },
+  "uncertainties": [
+    {
+      "where": "Cluster I, grade 1A header",
+      "printed": "(17)  1A  Cultural Hall",
+      "issue": "student count read twice as \"(1,7)\" at native resolution; most likely \"(17)\"",
+      "impact": "1A class size not fully confirmed"
+    },
+    {
+      "where": "Cluster I header row, all grades",
+      "printed": "17+  KG A  KG Hall",
+      "issue": "Cluster I prints the student count to the LEFT of the section code; the count for KG is printed as \"17+\" rather than a parenthesised number",
+      "impact": "cosmetic; class_size for KG recorded as 17"
+    },
+    {
+      "where": "Cluster I, KG A period 1 and 2A period 1",
+      "printed": "15 PRANAAM MANTRAS",
+      "issue": "a stray \"15\" was reported immediately before the subject in two independent reads",
+      "impact": "not part of the subject name; excluded"
+    },
+    {
+      "where": "Cluster III period 1",
+      "printed": "n/a",
+      "issue": "period 1 sits above the crop used for periods 2-4 and was read from a wide header-band crop; the left-to-right column order (6A, 7A, 8A) was inferred from the printed column order in that same crop",
+      "impact": "period 1 for 6A/7A/8A is single-read, not reconciled"
+    },
+    {
+      "where": "Cluster III, Rameshwari Aunty",
+      "printed": "Rameshwari Aunty*",
+      "issue": "one low-resolution read in the footer band gave \"Ratneshwari Aunty*\"",
+      "impact": "name spelling taken from the two higher-resolution reads"
+    },
+    {
+      "where": "Cluster III, Nina Didi",
+      "printed": "Nina Didi",
+      "issue": "one read gave \"Nina Bibi\"",
+      "impact": "name spelling taken from the higher-resolution reads"
+    },
+    {
+      "where": "Cluster III, Swati C. Aunty",
+      "printed": "Swati C. Aunty",
+      "issue": "one read gave lowercase \"swati C Aunty\" with no period",
+      "impact": "cosmetic"
+    },
+    {
+      "where": "Cluster IV, Kiron / Kiran Aunty",
+      "printed": "Kiron Aunty (9A) vs Kiran Aunty (10A)",
+      "issue": "the same name appears spelled two ways on the same page",
+      "impact": "both preserved as printed; may be one person"
+    },
+    {
+      "where": "Cluster II/III/IV snack-break row",
+      "printed": "Snack Break",
+      "issue": "the room for the snack break was not legible for these clusters (only Cluster I's rooms were read)",
+      "impact": "snack_break rooms recorded as null where unknown"
+    },
+    {
+      "where": "Cluster II, 4A period 3",
+      "printed": "Medha D. Aunty, , Bindu Aunty, Harpul Uncle, (Kinjal Aunty)",
+      "issue": "the sheet prints a double comma after 'Medha D. Aunty'",
+      "impact": "preserved in teachers_raw; the empty token is dropped from teachers[]"
+    },
+    {
+      "where": "Cluster IV, 10A period 4 and 11A period 1",
+      "printed": "(Uncle)  /  ((Uncle))",
+      "issue": "the sheet prints a role word where a personal name should be, exactly as on the Sunday sheet",
+      "impact": "teachers[].name is null for those tokens"
+    }
+  ]
+}
