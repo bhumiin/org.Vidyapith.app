@@ -19,6 +19,7 @@ class EventsCarousel extends StatefulWidget {
     required this.events,
     this.interval = const Duration(seconds: 5),
     this.isDark = false,
+    this.onEventTap,
   });
 
   /// Events to show (already sorted soonest-first by the scraper).
@@ -29,6 +30,9 @@ class EventsCarousel extends StatefulWidget {
 
   /// Whether to use dark theme colors.
   final bool isDark;
+
+  /// Called when the user taps an event card that links out (e.g. RSVP).
+  final ValueChanged<UpcomingEvent>? onEventTap;
 
   @override
   State<EventsCarousel> createState() => _EventsCarouselState();
@@ -147,6 +151,10 @@ class _EventsCarouselState extends State<EventsCarousel> {
                 key: ValueKey<int>(_currentIndex),
                 event: _events[_currentIndex],
                 isDark: widget.isDark,
+                onTap: widget.onEventTap == null ||
+                        _events[_currentIndex].url == null
+                    ? null
+                    : () => widget.onEventTap!(_events[_currentIndex]),
               ),
             ),
           ),
@@ -190,6 +198,7 @@ class UpcomingEventCard extends StatelessWidget {
     super.key,
     required this.event,
     this.isDark = false,
+    this.onTap,
   });
 
   /// Event to display.
@@ -198,6 +207,9 @@ class UpcomingEventCard extends StatelessWidget {
   /// Whether to use dark theme colors.
   final bool isDark;
 
+  /// Called when the card is tapped (only wired up when the event links out).
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
     final dateParts = extractUpcomingEventDateParts(event);
@@ -205,9 +217,12 @@ class UpcomingEventCard extends StatelessWidget {
     final day = dateParts.$2;
     final detailText = event.details ?? '';
     final description = event.title.trim();
+    final linkLabel = event.linkLabel?.trim() ?? '';
+    final accent = isDark ? const Color(0xFF60A5FA) : const Color(0xFF0B73DA);
 
     return ShadCard(
       padding: EdgeInsets.zero,
+      onTap: onTap,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(ShadCNTheme.space4),
@@ -252,6 +267,26 @@ class UpcomingEventCard extends StatelessWidget {
                       height: 1.3,
                     ),
                   ),
+                  if (linkLabel.isNotEmpty) ...[
+                    const SizedBox(height: ShadCNTheme.space2),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          linkLabel,
+                          style: TextStyle(
+                            color: accent,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            decoration: TextDecoration.underline,
+                            decorationColor: accent,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Icons.arrow_forward, size: 16, color: accent),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

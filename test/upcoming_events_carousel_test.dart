@@ -131,7 +131,95 @@ void main() {
     });
   });
 
+  group('UpcomingEvent links', () {
+    test('round-trips url and linkLabel through JSON', () {
+      const event = UpcomingEvent(
+        title: 'Thanksgiving Prayer',
+        details: 'Thursday, November 26, 9:00am-1:00pm',
+        url: 'https://docs.google.com/forms/d/e/rsvp/viewform',
+        linkLabel: 'RSVP HERE',
+      );
+
+      final restored = UpcomingEvent.fromJson(event.toJson());
+
+      expect(restored, event);
+      expect(restored.url, event.url);
+      expect(restored.linkLabel, 'RSVP HERE');
+    });
+
+    test('attaches the RSVP link to its event and strips it from the title',
+        () {
+      const html = '''
+<html><body>
+  <h2 class="wsite-content-title"><strong>Upcoming Events</strong></h2>
+  <div class="paragraph"><strong>Saturday, November 14, 2099, 8:30am-12:30pm - Diwali Celebration<br /><br />Thursday, November 26, 2099, 9:00am-1:00pm - Thanksgiving Prayer - <a href="https://docs.google.com/forms/d/e/rsvp/viewform" target="_blank">RSVP HERE</a></strong></div>
+</body></html>
+''';
+
+      final scraper = WebsiteScraper();
+      addTearDown(scraper.dispose);
+
+      final content = scraper.parseHomepageDocument(html_parser.parse(html));
+      final events = content.upcomingEvents;
+
+      expect(events, hasLength(2));
+      expect(events[0].title, 'Diwali Celebration');
+      expect(events[0].url, isNull);
+
+      expect(events[1].title, 'Thanksgiving Prayer');
+      expect(events[1].details, 'Thursday, November 26, 2099, 9:00am-1:00pm');
+      expect(events[1].linkLabel, 'RSVP HERE');
+      expect(
+        events[1].url,
+        'https://docs.google.com/forms/d/e/rsvp/viewform',
+      );
+    });
+  });
+
   group('EventsCarousel', () {
+    testWidgets('renders nothing when there are no events', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: EventsCarousel(events: [])),
+        ),
+      );
+
+      expect(find.byType(UpcomingEventCard), findsNothing);
+      expect(find.byType(AnimatedContainer), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('event card exposes a tappable RSVP link', (tester) async {
+      UpcomingEvent? tapped;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: EventsCarousel(
+              events: const [
+                UpcomingEvent(
+                  title: 'Thanksgiving Prayer',
+                  details: 'Thursday, November 26, 9:00am-1:00pm',
+                  url: 'https://docs.google.com/forms/d/e/rsvp/viewform',
+                  linkLabel: 'RSVP HERE',
+                ),
+              ],
+              interval: const Duration(seconds: 30),
+              onEventTap: (event) => tapped = event,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('RSVP HERE'), findsOneWidget);
+
+      await tester.tap(find.byType(UpcomingEventCard));
+      await tester.pump();
+
+      expect(tapped?.title, 'Thanksgiving Prayer');
+      expect(tapped?.url, 'https://docs.google.com/forms/d/e/rsvp/viewform');
+    });
+
     testWidgets('shows first event and advances on swipe', (tester) async {
       final events = [
         const UpcomingEvent(
