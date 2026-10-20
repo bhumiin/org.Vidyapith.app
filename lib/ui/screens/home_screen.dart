@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/shadcn_theme.dart';
-import '../components/card.dart';
 import '../components/photo_carousel.dart';
 import '../components/events_carousel.dart';
+import '../components/announcements_carousel.dart';
 import '../components/copyright_widget.dart';
 import '../../models/website_content.dart';
 import '../../services/website_scraper.dart';
@@ -196,9 +196,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildWelcomeSection(context, isDark),
                 // Photo carousel showing school images
                 _buildPhotoCarouselSection(context, isDark),
-                // Dynamic link tiles (if detected) - positioned after Photo Carousel
+                // Announcement links from the homepage (clickable carousel)
                 if (_websiteContent?.dynamicLinks.isNotEmpty == true)
-                  _buildDynamicLinkSection(context, isDark),
+                  _buildAnnouncementsSection(context, isDark),
                 // Upcoming events list
                 _buildEventsSection(context, isDark),
                 // Quick links grid (Snack Signup, Classes, etc.)
@@ -458,22 +458,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Builds the "Upcoming Events" section
-  /// Displays a list of upcoming events fetched from the Vidyapith website
-  /// Shows loading state, empty state, or error state as appropriate
+  /// Builds the "Upcoming Events" section.
+  ///
+  /// Renders nothing at all when there are no upcoming events (or while the
+  /// first fetch is still running), so the page does not show an empty heading
+  /// or a placeholder that the website has no content for.
   Widget _buildEventsSection(BuildContext context, bool isDark) {
-    // Get events from website content, or empty list if not loaded yet
-    final events = _websiteContent?.upcomingEvents ?? [];
-    
-    // Determine what state to show:
-    // - Loading: Show spinner while fetching events
-    // - Empty: Show "No events" message if no events found
-    // - Error: Show error message if fetch failed
-    final bool isLoadingEvents = _isLoading && events.isEmpty;
-    final bool showEmptyState =
-        !_isLoading && events.isEmpty && _errorMessage == null;
-    final bool showErrorState =
-        !_isLoading && events.isEmpty && _errorMessage != null;
+    final events = _websiteContent?.upcomingEvents ?? const <UpcomingEvent>[];
+    if (events.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -498,67 +492,18 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: ShadCNTheme.space4),
-          child: Column(
-            children: [
-              // Show loading spinner while fetching events
-              if (isLoadingEvents) _buildLoadingEventPlaceholder(isDark),
-              
-              // Show carousel of events if we have them
-              if (!isLoadingEvents && events.isNotEmpty)
-                EventsCarousel(events: events, isDark: isDark),
-              
-              // Show "No events" message if list is empty
-              if (!isLoadingEvents && showEmptyState)
-                _buildStatusMessage('No upcoming events posted yet.', isDark),
-              
-              // Show error message if fetch failed
-              if (!isLoadingEvents && showErrorState)
-                _buildStatusMessage(
-                  'Unable to refresh events. Please try again later.',
-                  isDark,
-                ),
-            ],
+          child: EventsCarousel(
+            events: events,
+            isDark: isDark,
+            onEventTap: (event) {
+              final url = event.url;
+              if (url != null && url.isNotEmpty) {
+                _openExternalUrl(url);
+              }
+            },
           ),
         ),
       ],
-    );
-  }
-
-  /// Shows a loading placeholder while events are being fetched
-  /// Displays a spinner inside a card-shaped container
-  Widget _buildLoadingEventPlaceholder(bool isDark) {
-    return ShadCard(
-      child: Container(
-        height: 96, // Same height as an event card
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1F2937) : const Color(0xFFF5F7F8),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const SizedBox(
-          width: 32,
-          height: 32,
-          child: CircularProgressIndicator(strokeWidth: 3), // Loading spinner
-        ),
-      ),
-    );
-  }
-
-  /// Shows a status message (either "No events" or error message)
-  /// Used when there are no events to display or when loading fails
-  Widget _buildStatusMessage(String message, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: ShadCNTheme.space2),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          message,
-          style: TextStyle(
-            color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
-            fontSize: 14,
-          ),
-        ),
-      ),
     );
   }
 
@@ -807,7 +752,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (uri == null) {
       // URL is invalid, show error message
       if (mounted) {
-        _showLaunchError(context);
+        _showLaunchError();
       }
       return;
     }
@@ -820,20 +765,20 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
       // If opening failed, show error message
-      if (!launched && context.mounted) {
-        _showLaunchError(context);
+      if (!launched && mounted) {
+        _showLaunchError();
       }
     } catch (_) {
       // If something went wrong, show error message
-      if (context.mounted) {
-        _showLaunchError(context);
+      if (mounted) {
+        _showLaunchError();
       }
     }
   }
 
   /// Shows an error message if a link fails to open
   /// Displays a temporary message at the bottom of the screen
-  void _showLaunchError(BuildContext context) {
+  void _showLaunchError() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Unable to open link. Please try again later.'),
@@ -842,101 +787,55 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Builds the dynamic link section.
+  /// Builds the Announcements section.
   ///
-  /// Displays one campaign tile per consecutive homepage announcement link.
-  /// Each tile opens its URL in the system browser.
-  Widget _buildDynamicLinkSection(BuildContext context, bool isDark) {
+  /// Shows a carousel of homepage announcement links (each opens in the system
+  /// browser). Calendar and ACT Food Drive links are filtered out by the
+  /// scraper because Quick Links already has tiles for them.
+  Widget _buildAnnouncementsSection(BuildContext context, bool isDark) {
     final dynamicLinks = _websiteContent?.dynamicLinks ?? const <DynamicLink>[];
     if (dynamicLinks.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        ShadCNTheme.space4,
-        ShadCNTheme.space4,
-        ShadCNTheme.space4,
-        ShadCNTheme.space4,
-      ),
-      child: Column(
-        children: [
-          for (var i = 0; i < dynamicLinks.length; i++) ...[
-            if (i > 0) const SizedBox(height: ShadCNTheme.space3),
-            _buildDynamicLinkTile(context, isDark, dynamicLinks[i]),
-          ],
-        ],
-      ),
-    );
-  }
-
-  /// Builds a single campaign announcement tile.
-  Widget _buildDynamicLinkTile(
-    BuildContext context,
-    bool isDark,
-    DynamicLink dynamicLink,
-  ) {
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () => _openDynamicLinkInBrowser(context, dynamicLink.url),
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF0B73DA).withOpacity(0.22)
-                : const Color(0xFFE8F1FF),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isDark ? const Color(0xFF2D3748) : const Color(0xFFE0E7FF),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            ShadCNTheme.space4,
+            ShadCNTheme.space5,
+            ShadCNTheme.space4,
+            ShadCNTheme.space3,
+          ),
+          child: Text(
+            'Announcements',
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF424242),
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.015,
             ),
           ),
-          padding: const EdgeInsets.all(ShadCNTheme.space4),
-          child: Row(
-            children: [
-              Icon(
-                Icons.campaign,
-                color: isDark
-                    ? const Color(0xFF60A5FA)
-                    : const Color(0xFF0B73DA),
-                size: 28,
-              ),
-              const SizedBox(width: ShadCNTheme.space3),
-              Expanded(
-                child: Text(
-                  dynamicLink.title,
-                  style: TextStyle(
-                    color: isDark
-                        ? const Color(0xFFE5E7EB)
-                        : const Color(0xFF424242),
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                color: isDark
-                    ? const Color(0xFF60A5FA)
-                    : const Color(0xFF0B73DA),
-                size: 16,
-              ),
-            ],
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: ShadCNTheme.space4),
+          child: AnnouncementsCarousel(
+            links: dynamicLinks,
+            isDark: isDark,
+            onLinkTap: (link) => _openExternalUrl(link.url),
           ),
         ),
-      ),
+      ],
     );
   }
 
-  /// Opens an announcement URL in the system browser.
-  Future<void> _openDynamicLinkInBrowser(BuildContext context, String url) async {
+  /// Opens [url] in the system browser and reports failure to the user.
+  Future<void> _openExternalUrl(String url) async {
     final uri = Uri.tryParse(url);
     if (uri == null) {
       if (mounted) {
-        _showLaunchError(context);
+        _showLaunchError();
       }
       return;
     }
@@ -947,11 +846,11 @@ class _HomeScreenState extends State<HomeScreen> {
         mode: LaunchMode.externalApplication,
       );
       if (!launched && mounted) {
-        _showLaunchError(context);
+        _showLaunchError();
       }
     } catch (_) {
       if (mounted) {
-        _showLaunchError(context);
+        _showLaunchError();
       }
     }
   }

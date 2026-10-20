@@ -248,8 +248,9 @@ class WebsiteScraper {
   // Each content type has its own cache key so they can be stored separately.
   
   /// Cache key for homepage content (thought of the day, events, images).
-  /// v5 invalidates caches that stored upcoming events as a single merged entry.
-  static const String _cacheKey = 'website_content_cache_v5';
+  /// v6 invalidates caches written before event link labels and before the
+  /// announcement run stopped picking up the event RSVP anchor.
+  static const String _cacheKey = 'website_content_cache_v6';
   
   /// Cache key for events page content
   static const String _eventsCacheKey = 'events_content_cache_v1';
@@ -1801,6 +1802,7 @@ class WebsiteScraper {
     if (resolvedUrl == null || resolvedUrl.isEmpty) return null;
     if (_isExcludedDynamicLinkUrl(resolvedUrl)) return null;
     if (_isNavigationDynamicLink(anchor)) return null;
+    if (_isInsideUpcomingEventsSection(anchor)) return null;
 
     final linkText = _cleanHtml(anchor.innerHtml).trim();
     if (linkText.isEmpty || linkText.length < 3) return null;
@@ -1839,6 +1841,7 @@ class WebsiteScraper {
       '/events',
       '/contact',
       'calendar',
+      'act-food-drive',
       'mailto:',
       'javascript:',
       '#',
@@ -1876,6 +1879,34 @@ class WebsiteScraper {
       depth++;
     }
     return false;
+  }
+
+  /// True when [anchor] sits inside the homepage Upcoming Events block.
+  ///
+  /// Uses the Weebly multicolumn wrapper so anchors in sibling columns (the
+  /// announcement stack) are not mistaken for events. Falls back to a date
+  /// check on the nearest paragraph when the page has no column markup.
+  bool _isInsideUpcomingEventsSection(Element anchor) {
+    Element? current = anchor.parent;
+    while (current != null) {
+      if (current.classes.contains('wsite-multicol-col')) {
+        return _cleanHtml(
+          current.innerHtml,
+        ).toLowerCase().contains('upcoming events');
+      }
+      if (current.localName == 'body') break;
+      current = current.parent;
+    }
+
+    Element? block = anchor.parent;
+    while (block != null &&
+        !block.classes.contains('paragraph') &&
+        block.localName != 'p' &&
+        block.localName != 'li') {
+      block = block.parent;
+    }
+    if (block == null) return false;
+    return upcomingEventStartPattern.hasMatch(_cleanHtml(block.innerHtml));
   }
 
   /// Nearest Weebly-style paragraph/block wrapper for an announcement anchor.
@@ -2615,6 +2646,7 @@ class WebsiteScraper {
 
     // Collect content from siblings following the heading, stopping at next section
     final List<String> eventLines = [];
+    final List<({String label, String url})> eventLinks = [];
     Element? current = heading.nextElementSibling;
     int depth = 0;
     const maxDepth = 10; // Prevent infinite loops
@@ -2640,6 +2672,7 @@ class WebsiteScraper {
             .toList();
         eventLines.addAll(lines);
       }
+      eventLinks.addAll(_eventLinksInElement(current));
 
       // Move to next sibling
       current = current.nextElementSibling;
@@ -2659,6 +2692,7 @@ class WebsiteScraper {
                 .where((line) => line.isNotEmpty)
                 .toList(),
           );
+          eventLinks.addAll(_eventLinksInElement(parentNext));
         }
       }
     }
@@ -2666,27 +2700,82 @@ class WebsiteScraper {
     if (eventLines.isEmpty) return const [];
 
     final entries = expandUpcomingEventLines(eventLines);
-    final events = entries.map(upcomingEventFromEntry);
+    final events = entries.map(
+      (entry) => _attachEventLink(upcomingEventFromEntry(entry), eventLinks),
+    );
     return filterAndSortUpcomingEvents(events);
+  }
+
+  /// Collects the content links inside an upcoming-events element.
+  ///
+  /// Homepage events occasionally end in a link (e.g. "… Thanksgiving Prayer -
+  /// RSVP HERE"). Those hrefs are captured here so the event card can expose
+  /// them, rather than surfacing as a standalone announcement tile.
+  List<({String label, String url})> _eventLinksInElement(Element element) {
+    final links = <({String label, String url})>[];
+    for (final anchor in element.querySelectorAll('a')) {
+      final href = anchor.attributes['href'];
+      if (href == null || href.isEmpty) continue;
+      final url = _resolveHref(href, _homepageUri);
+      if (url == null || url.isEmpty) continue;
+      final label = _cleanHtml(anchor.innerHtml).trim();
+      if (label.isEmpty) continue;
+      links.add((label: label, url: url));
+    }
+    return links;
+  }
+
+  /// Attaches the matching content link, if any, to a parsed event.
+  ///
+  /// A trailing " - <label>" is removed from the title so the card can render
+  /// the label as its own tappable row instead of repeating it in bold.
+  UpcomingEvent _attachEventLink(
+    UpcomingEvent event,
+    List<({String label, String url})> links,
+  ) {
+    if (links.isEmpty) return event;
+
+    final haystack = '${event.details ?? ''} ${event.title}'.toLowerCase();
+    for (final link in links) {
+      final label = link.label.trim();
+      if (label.isEmpty || !haystack.contains(label.toLowerCase())) continue;
+
+      final suffix = RegExp(
+        r'\s*[-–—]\s*' + RegExp.escape(label) + r'\s*$',
+        caseSensitive: false,
+      );
+      final title = event.title.replaceFirst(suffix, '').trim();
+
+      return UpcomingEvent(
+        title: title.isEmpty ? event.title : title,
+        details: event.details,
+        url: link.url,
+        linkLabel: label,
+      );
+    }
+    return event;
   }
 
   /// Cleans upcoming-events HTML while keeping `<br>` as newlines.
   ///
   /// The homepage posts multiple events in one paragraph separated by
   /// `<br /><br />`. Preserving those breaks makes each event its own line
-  /// before weekday-boundary splitting runs as a fallback.
+  /// before weekday-boundary splitting runs as a fallback. Source-formatting
+  /// newlines are collapsed to spaces so an inline link (e.g. "RSVP HERE")
+  /// stays attached to the event it belongs to.
   String _cleanUpcomingEventsHtml(String html) {
+    const String breakSentinel = '\uE000';
     final withBreaks = html.replaceAll(
       RegExp(r'(<br\s*/?>)+', caseSensitive: false),
-      '\n',
+      breakSentinel,
     );
     final fragment = html_parser.parseFragment(withBreaks);
     return (fragment.text ?? '')
         .replaceAll('\u00A0', ' ')
         .replaceAll('\u200B', '')
-        .replaceAll('\r', '\n')
-        .split('\n')
-        .map((line) => line.replaceAll(RegExp(r'[ \t]+'), ' ').trim())
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .split(breakSentinel)
+        .map((line) => line.trim())
         .where((line) => line.isNotEmpty)
         .join('\n');
   }

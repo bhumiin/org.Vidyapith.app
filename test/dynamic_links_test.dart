@@ -143,6 +143,64 @@ void main() {
       );
     });
 
+    test('skips the event RSVP anchor and collects the announcement column', () {
+      // Mirrors the live homepage: an Upcoming Events column (containing the
+      // Thanksgiving RSVP anchor) to the left of the announcement column.
+      const html = '''
+<html><body>
+  <table><tr>
+    <td class="wsite-multicol-col">
+      <h2 class="wsite-content-title"><strong>Upcoming Events</strong></h2>
+      <div class="paragraph"><strong>Thursday, November 26, 2099, 9:00am-1:00pm - Thanksgiving Prayer -
+        <a href="https://docs.google.com/forms/d/e/rsvp/viewform" target="_blank">RSVP HERE</a></strong></div>
+    </td>
+    <td class="wsite-multicol-col">
+      <div class="paragraph"><strong><font size="5">
+        <a href="/50th-anniversary-alumni-reunion.html" target="_blank">REGISTER FOR 50TH ANNIVERSARY ALUMNI REUNION HERE</a>
+      </font></strong></div>
+      <div class="paragraph"><strong>
+        <a href="https://docs.google.com/presentation/d/letters/pub">LETTERS FROM SWAMIS &amp; PRAVRAJIKAS</a>
+      </strong></div>
+      <div class="paragraph"><strong>
+        <a href="https://docs.google.com/presentation/d/messages/pub">MESSAGES FOR AND MEMORIES OF VANDANA AUNTY</a>
+      </strong></div>
+      <div class="paragraph"><strong><a href="/2026-calendar.html">CALENDAR</a></strong></div>
+      <div class="paragraph"><strong><a href="/act-food-drive.html">ACT FOOD DRIVE</a></strong></div>
+    </td>
+  </tr></table>
+</body></html>
+''';
+
+      final content = scraper.parseHomepageDocument(html_parser.parse(html));
+
+      expect(content.dynamicLinks, hasLength(3));
+      expect(
+        content.dynamicLinks.map((l) => l.title).toList(),
+        [
+          'REGISTER FOR 50TH ANNIVERSARY ALUMNI REUNION HERE',
+          'LETTERS FROM SWAMIS & PRAVRAJIKAS',
+          'MESSAGES FOR AND MEMORIES OF VANDANA AUNTY',
+        ],
+      );
+      expect(
+        content.dynamicLinks.first.url,
+        'https://www.vidyapith.org/50th-anniversary-alumni-reunion.html',
+      );
+      expect(
+        content.dynamicLinks.any((l) => l.title.contains('RSVP')),
+        isFalse,
+      );
+      expect(
+        content.dynamicLinks.any((l) => l.title.contains('CALENDAR')),
+        isFalse,
+      );
+      expect(content.dynamicLinks.any((l) => l.title.contains('ACT')), isFalse);
+      expect(
+        content.upcomingEvents.single.url,
+        'https://docs.google.com/forms/d/e/rsvp/viewform',
+      );
+    });
+
     test('returns a single link when only one announcement exists', () {
       const html = '''
 <html><body>

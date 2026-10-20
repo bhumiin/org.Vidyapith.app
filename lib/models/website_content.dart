@@ -63,13 +63,29 @@ class UpcomingEvent {
   /// Optional additional details about the event (time, location, etc.).
   final String? details;
 
+  /// Optional URL the event card links to (e.g. an RSVP form).
+  final String? url;
+
+  /// Label for the in-card link, shown when [url] is set (e.g. "RSVP HERE").
+  final String? linkLabel;
+
   /// Creates a new UpcomingEvent.
   /// 
-  /// [title] is required, but [details] is optional.
-  const UpcomingEvent({required this.title, this.details});
+  /// [title] is required; [details], [url], and [linkLabel] are optional.
+  const UpcomingEvent({
+    required this.title,
+    this.details,
+    this.url,
+    this.linkLabel,
+  });
 
   /// Converts this object to JSON format for storage.
-  Map<String, dynamic> toJson() => {'title': title, 'details': details};
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    'details': details,
+    'url': url,
+    'linkLabel': linkLabel,
+  };
 
   /// Creates an UpcomingEvent from JSON data.
   /// 
@@ -78,6 +94,8 @@ class UpcomingEvent {
   factory UpcomingEvent.fromJson(Map<String, dynamic> json) => UpcomingEvent(
     title: json['title'] as String? ?? '',
     details: json['details'] as String?,
+    url: json['url'] as String?,
+    linkLabel: json['linkLabel'] as String?,
   );
 
   @override
@@ -85,10 +103,12 @@ class UpcomingEvent {
       identical(this, other) ||
       other is UpcomingEvent &&
           other.title == title &&
-          other.details == details;
+          other.details == details &&
+          other.url == url &&
+          other.linkLabel == linkLabel;
 
   @override
-  int get hashCode => Object.hash(title, details);
+  int get hashCode => Object.hash(title, details, url, linkLabel);
 }
 
 /// Represents a dynamically detected link from the homepage.
