@@ -129,5 +129,64 @@ void main() {
       expect(find.text(quoteText), findsOneWidget);
       expect(find.text('- Swami Vivekananda'), findsOneWidget);
     });
+
+    testWidgets(
+        'fits a long quote in the fixed-height slide without overflowing',
+        (tester) async {
+      // The featured quote as the site prints it - long enough to be taller
+      // than the fixed 16/9 slide on a phone.
+      const longQuote =
+          'Each soul is potentially divine. The goal is to manifest this divinity within by controlling nature, external and internal. Do this either by work, or worship, or psychic control, or philosophy – by one or more or all of these - and be free.';
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            // iPhone-width column: the 16/9 slide then leaves the quote less
+            // vertical room than a long quote needs.
+            body: Center(
+              child: SizedBox(
+                width: 370,
+                child: PhotoCarousel(
+                  slides: const [
+                    CarouselQuoteSlide(
+                      text: longQuote,
+                      author: 'Swami Vivekananda',
+                    ),
+                  ],
+                  interval: const Duration(seconds: 30),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // A RenderFlex overflow is reported through FlutterError; name it here
+      // instead of letting the generic "pending exception" failure fire.
+      expect(tester.takeException(), isNull);
+      expect(find.text(longQuote), findsOneWidget);
+      expect(find.text('- Swami Vivekananda'), findsOneWidget);
+
+      // The whole quote must be painted inside the card: the quote is scaled
+      // down to fit rather than running past the slide's bottom edge (or
+      // being hidden behind a scroll).
+      final RenderBox quoteBox = tester.renderObject<RenderBox>(
+        find.text(longQuote),
+      );
+      final RenderBox cardBox = tester.renderObject<RenderBox>(
+        find.byType(PhotoCarousel),
+      );
+      final Offset quoteTop = quoteBox.localToGlobal(Offset.zero);
+      final Offset quoteBottom = quoteBox.localToGlobal(
+        quoteBox.size.bottomRight(Offset.zero),
+      );
+      final Offset cardTop = cardBox.localToGlobal(Offset.zero);
+      final Offset cardBottom = cardBox.localToGlobal(
+        cardBox.size.bottomRight(Offset.zero),
+      );
+      expect(quoteTop.dy, greaterThanOrEqualTo(cardTop.dy));
+      expect(quoteBottom.dy, lessThanOrEqualTo(cardBottom.dy));
+    });
   });
 }
