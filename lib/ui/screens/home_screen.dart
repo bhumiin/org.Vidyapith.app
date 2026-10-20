@@ -12,6 +12,7 @@ import '../../models/website_content.dart';
 import '../../services/website_scraper.dart';
 import 'archive_screen.dart';
 import 'bookstore_screen.dart';
+import 'class_schedule_day_hub_screen.dart';
 import 'classes_screen.dart';
 import 'class_detail_screen.dart';
 import 'donate_screen.dart';
@@ -575,6 +576,11 @@ class _HomeScreenState extends State<HomeScreen> {
         'url': 'internal://snack-signup', // Opens Snack Signup screen
       },
       {
+        'icon': Icons.calendar_month,
+        'label': 'CLASS SCHEDULE',
+        'url': 'internal://class-schedule', // Opens the Class Schedule day hub
+      },
+      {
         'icon': Icons.school,
         'label': 'CURRICULAR CLASSES',
         'url': 'internal://class/Curricular Classes', // Opens class detail screen
@@ -776,6 +782,14 @@ class _HomeScreenState extends State<HomeScreen> {
         ).push(MaterialPageRoute(builder: (_) => const SnackSignupScreen()));
         return;
       }
+      if (url == 'internal://class-schedule') {
+        // Open the Class Schedule day hub: pick Saturday or Sunday, then
+        // drill into that day's clusters and grades.
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ClassScheduleDayHubScreen()),
+        );
+        return;
+      }
       if (url == 'internal://archive') {
         // Open the archive screen
         Navigator.of(
@@ -806,12 +820,12 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
       // If opening failed, show error message
-      if (!launched && mounted) {
+      if (!launched && context.mounted) {
         _showLaunchError(context);
       }
     } catch (_) {
       // If something went wrong, show error message
-      if (mounted) {
+      if (context.mounted) {
         _showLaunchError(context);
       }
     }

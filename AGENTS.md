@@ -12,7 +12,7 @@ use. There is no backend API — the website is the data source.
   Calendar ICS feed. `shared_preferences` caches content for 24h.
 - Key packages: `http`, `html`, `webview_flutter`, `shared_preferences`, `connectivity_plus`,
   `icalendar_parser`, `url_launcher`, `google_fonts`, `flutter_animate`, `gap`, `flutter_svg`
-- Platforms: iOS (CocoaPods, platform 13.0), Android (compileSdk/targetSdk 37, Gradle 9.3.1,
+- Platforms: iOS (CocoaPods, platform 15.0 — Xcode 27 refuses anything lower), Android (compileSdk/targetSdk 37, Gradle 9.3.1,
   AGP 9.1.1, minSdk from Flutter)
 
 ## Layout (this is the real structure — follow it)

@@ -410,16 +410,34 @@ class _QuoteSlidePage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                text,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: isDark
-                      ? const Color(0xFFE5E7EB)
-                      : const Color(0xFF4B5563),
-                  fontSize: 16,
-                  fontStyle: FontStyle.italic,
-                  height: 1.45,
+              // The slide is a fixed 16/9 box, so a long quote can be taller
+              // than the space left under the author line. Wrap the quote at
+              // the card width and scale it down only when it would not fit:
+              // the whole quote stays visible (the slide auto-advances in
+              // seconds, so a scrollable quote would rarely be read), the
+              // author line keeps its size, and nothing overflows.
+              Flexible(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: SizedBox(
+                        width: constraints.maxWidth,
+                        child: Text(
+                          text,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: isDark
+                                ? const Color(0xFFE5E7EB)
+                                : const Color(0xFF4B5563),
+                            fontSize: 16,
+                            fontStyle: FontStyle.italic,
+                            height: 1.45,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
               if (author != null && author!.isNotEmpty) ...[
