@@ -6,8 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:vidyapith_hybrid_app/models/sunday_school_schedule.dart';
 import 'package:vidyapith_hybrid_app/services/sunday_school_schedule_service.dart';
+import 'package:vidyapith_hybrid_app/ui/components/card.dart';
 import 'package:vidyapith_hybrid_app/ui/screens/class_schedule_screen.dart';
 import 'package:vidyapith_hybrid_app/ui/screens/grade_schedule_screen.dart';
+import 'package:vidyapith_hybrid_app/ui/theme/shadcn_theme.dart';
 
 /// Path of the bundled schedule, relative to the project root.
 const String scheduleAssetPath =
@@ -177,6 +179,37 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('spells out PHL and keeps every block the same width',
+        (tester) async {
+      await pumpGradeScreen(tester, '3B');
+
+      // The printed room stays as printed, with the abbreviation expanded.
+      expect(
+        find.text('3B1 — PHL 1 and PHL 2 (Prayer Hall Lobby)'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('3B2 — PHL 1 and PHL 2 (Prayer Hall Lobby)'),
+        findsOneWidget,
+      );
+      // The transcription caveat for this room is no longer shown: PHL is
+      // spelled out above, and the doubt itself still lives in
+      // `uncertainties` in the asset.
+      expect(
+        find.textContaining('exact wording needs confirmation'),
+        findsNothing,
+      );
+
+      // Every block - header, periods, legend - spans the full column width
+      // instead of hugging its own content.
+      final widths = find
+          .byType(ShadCard)
+          .evaluate()
+          .map((element) => (element.renderObject! as RenderBox).size.width)
+          .toSet();
+      expect(widths, hasLength(1), reason: 'blocks must be uniform in width');
+    });
   });
 
   group('ClassScheduleScreen cluster list', () {
@@ -205,8 +238,13 @@ void main() {
         expect(find.text('Cluster II'), findsOneWidget);
         expect(find.text('Cluster III'), findsOneWidget);
         expect(find.text('Cluster IV'), findsOneWidget);
+        // Each collapsed cluster lists its grades under a "Grades:" label.
+        expect(find.text('Grades: KG, 1, 2'), findsOneWidget);
+        expect(find.text('Grades: 9, 10, 11, 12'), findsOneWidget);
         // Grades are hidden while every cluster is collapsed.
         expect(find.text('9B'), findsNothing);
+        // The printed header (size + grade) is not shown on the list.
+        expect(find.text('(20) Grade 12. Prayer and Assembly'), findsNothing);
 
         await tester.tap(find.text('Cluster IV'));
         await tester.pumpAndSettle();
@@ -216,6 +254,12 @@ void main() {
         expect(find.text('10B'), findsOneWidget);
         expect(find.text('11B'), findsOneWidget);
         expect(find.text('12B'), findsOneWidget);
+        // Grade rows are bold and list nothing but the grade.
+        expect(
+          tester.widget<Text>(find.text('12B')).style?.fontWeight,
+          ShadCNTheme.fontBold,
+        );
+        expect(find.text('(20) Grade 12. Prayer and Assembly'), findsNothing);
         // Only one cluster is open at a time, so Cluster I stays closed.
         expect(find.text('KG'), findsNothing);
 
@@ -224,8 +268,14 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(GradeScheduleScreen), findsOneWidget);
+        expect(find.text('Grade 12B'), findsOneWidget);
         expect(find.text('Period 1'), findsOneWidget);
+        // The first block lists rooms and class size only: no repeated
+        // grade label, no printed header line with the size in it.
+        expect(find.text('12B — Room 201'), findsOneWidget);
         expect(find.text('Class size: 20'), findsOneWidget);
+        expect(find.text('12B'), findsNothing);
+        expect(find.text('(20) Grade 12. Prayer and Assembly'), findsNothing);
       },
     );
   });

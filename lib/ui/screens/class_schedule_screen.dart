@@ -201,7 +201,7 @@ class _ClassScheduleScreenState extends State<ClassScheduleScreen> {
                           Text('Cluster ${cluster.id}', style: titleStyle),
                           if (cluster.grades.isNotEmpty) ...[
                             const SizedBox(height: ShadCNTheme.space1),
-                            Text(cluster.grades.join(', '),
+                            Text('Grades: ${cluster.grades.join(', ')}',
                                 style: subtitleStyle),
                           ],
                         ],
@@ -228,7 +228,7 @@ class _ClassScheduleScreenState extends State<ClassScheduleScreen> {
   }
 
   /// One grade row inside an open cluster. Tapping it pushes the grade
-  /// schedule screen.
+  /// schedule screen. Only the grade is listed - bold, with no header text.
   Widget _buildGradeRow(
     ThemeData theme,
     bool isDark,
@@ -236,15 +236,10 @@ class _ClassScheduleScreenState extends State<ClassScheduleScreen> {
     ScheduleGroup group,
   ) {
     final labelStyle = theme.textTheme.titleSmall?.copyWith(
-      fontWeight: ShadCNTheme.fontSemibold,
+      fontWeight: ShadCNTheme.fontBold,
       color: isDark
           ? ShadCNTheme.darkCardForeground
           : ShadCNTheme.cardForeground,
-    );
-    final headerStyle = theme.textTheme.bodySmall?.copyWith(
-      color: isDark
-          ? ShadCNTheme.darkMutedForeground
-          : ShadCNTheme.mutedForeground,
     );
 
     return Material(
@@ -259,17 +254,7 @@ class _ClassScheduleScreenState extends State<ClassScheduleScreen> {
           child: Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(group.gradeLabel, style: labelStyle),
-                    if (group.headerRaw.isNotEmpty) ...[
-                      const SizedBox(height: ShadCNTheme.space1),
-                      // The header exactly as printed, as secondary text.
-                      Text(group.headerRaw, style: headerStyle),
-                    ],
-                  ],
-                ),
+                child: Text(group.gradeLabel, style: labelStyle),
               ),
               Icon(
                 Icons.chevron_right,
